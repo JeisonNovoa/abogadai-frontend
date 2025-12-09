@@ -24,7 +24,7 @@ export default function NuevaTutela() {
   const [erroresValidacion, setErroresValidacion] = useState({});
 
   const [formData, setFormData] = useState({
-    tipo_documento: 'tutela',
+    tipo_documento: 'tutela', // 'tutela' | 'derecho_peticion'
     nombre_solicitante: '',
     identificacion_solicitante: '',
     direccion_solicitante: '',
@@ -264,11 +264,12 @@ export default function NuevaTutela() {
   };
 
   const handleDescargarTXT = () => {
+    const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
     const blob = new Blob([documentoGenerado], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tutela_${formData.nombre_solicitante || 'documento'}.txt`;
+    a.download = `${tipoDocNombre}_${formData.nombre_solicitante || 'documento'}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -277,12 +278,13 @@ export default function NuevaTutela() {
 
   const handleDescargarPDF = async () => {
     try {
+      const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
       const response = await casoService.descargarPDF(casoId);
       const blob = new Blob([response], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tutela_${formData.nombre_solicitante || 'documento'}.pdf`;
+      a.download = `${tipoDocNombre}_${formData.nombre_solicitante || 'documento'}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -295,12 +297,13 @@ export default function NuevaTutela() {
 
   const handleDescargarDOCX = async () => {
     try {
+      const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
       const response = await casoService.descargarDOCX(casoId);
       const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tutela_${formData.nombre_solicitante || 'documento'}.docx`;
+      a.download = `${tipoDocNombre}_${formData.nombre_solicitante || 'documento'}.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -318,7 +321,10 @@ export default function NuevaTutela() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {casoId ? 'Editar Tutela' : 'Nueva Tutela'}
+              {casoId
+                ? (formData.tipo_documento === 'tutela' ? 'Editar Tutela' : 'Editar Derecho de Petición')
+                : (formData.tipo_documento === 'tutela' ? 'Nueva Tutela' : 'Nuevo Derecho de Petición')
+              }
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {guardando && 'Guardando...'}
@@ -348,6 +354,62 @@ export default function NuevaTutela() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Selector de Tipo de Documento */}
+          {!casoId && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Tipo de Documento Legal</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                  formData.tipo_documento === 'tutela'
+                    ? 'border-indigo-600 ring-2 ring-indigo-600 bg-indigo-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                }`}>
+                  <input
+                    type="radio"
+                    name="tipo_documento"
+                    value="tutela"
+                    checked={formData.tipo_documento === 'tutela'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className="flex flex-col flex-1">
+                    <span className="flex items-center text-sm font-medium text-gray-900">
+                      <span className="text-2xl mr-2">⚖️</span>
+                      Tutela
+                    </span>
+                    <span className="mt-1 text-xs text-gray-500">
+                      Para protección de derechos fundamentales (salud, vida, educación, etc.)
+                    </span>
+                  </div>
+                </label>
+
+                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                  formData.tipo_documento === 'derecho_peticion'
+                    ? 'border-green-600 ring-2 ring-green-600 bg-green-50'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                }`}>
+                  <input
+                    type="radio"
+                    name="tipo_documento"
+                    value="derecho_peticion"
+                    checked={formData.tipo_documento === 'derecho_peticion'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className="flex flex-col flex-1">
+                    <span className="flex items-center text-sm font-medium text-gray-900">
+                      <span className="text-2xl mr-2">📝</span>
+                      Derecho de Petición
+                    </span>
+                    <span className="mt-1 text-xs text-gray-500">
+                      Para solicitar información, documentos o actuaciones administrativas
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* Sección 1: Datos del Solicitante */}
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Datos del Solicitante</h2>
@@ -441,9 +503,11 @@ export default function NuevaTutela() {
             </div>
           </div>
 
-          {/* Sección 2: Entidad Accionada */}
+          {/* Sección 2: Entidad Accionada/Destinataria */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">2. Entidad Accionada</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              2. {formData.tipo_documento === 'tutela' ? 'Entidad Accionada' : 'Entidad Destinataria'}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -497,16 +561,21 @@ export default function NuevaTutela() {
             </div>
           </div>
 
-          {/* Sección 3: Contenido de la Tutela */}
+          {/* Sección 3: Contenido del Documento */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">3. Contenido de la Tutela</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              3. Contenido {formData.tipo_documento === 'tutela' ? 'de la Tutela' : 'del Derecho de Petición'}
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Hechos *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Describe los hechos que fundamentan la tutela
+                  {formData.tipo_documento === 'tutela'
+                    ? 'Describe los hechos que fundamentan la tutela'
+                    : 'Describe la situación que motiva tu petición'
+                  }
                 </p>
                 <textarea
                   name="hechos"
@@ -518,58 +587,64 @@ export default function NuevaTutela() {
                 />
               </div>
 
+              {/* Campo Derechos Vulnerados - Solo para Tutelas */}
+              {formData.tipo_documento === 'tutela' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Derechos Vulnerados *
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Indica qué derechos fundamentales fueron vulnerados
+                  </p>
+
+                  {/* Selector de derechos fundamentales */}
+                  <details className="mb-2 border border-gray-200 rounded-md p-2 bg-gray-50">
+                    <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                      Ver derechos fundamentales disponibles
+                    </summary>
+                    <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
+                      {derechosFundamentales.map((derecho, index) => (
+                        <div
+                          key={index}
+                          className="text-xs p-2 hover:bg-indigo-50 rounded cursor-pointer"
+                          onClick={() => {
+                            const texto = `${derecho.derecho} (Art. ${derecho.articulo}): ${derecho.descripcion}`;
+                            setFormData(prev => ({
+                              ...prev,
+                              derechos_vulnerados: prev.derechos_vulnerados
+                                ? prev.derechos_vulnerados + '\n\n' + texto
+                                : texto
+                            }));
+                          }}
+                        >
+                          <span className="font-semibold">Art. {derecho.articulo}</span> - {derecho.derecho}
+                          {derecho.nota && <span className="text-gray-500 ml-2">({derecho.nota})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+
+                  <textarea
+                    name="derechos_vulnerados"
+                    value={formData.derechos_vulnerados}
+                    onChange={handleChange}
+                    required
+                    rows={4}
+                    placeholder="Ej: Derecho a la Salud (Art. 49), Derecho a la Vida (Art. 11)..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Derechos Vulnerados *
+                  {formData.tipo_documento === 'tutela' ? 'Pretensiones' : 'Peticiones'} *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Indica qué derechos fundamentales fueron vulnerados
-                </p>
-
-                {/* Selector de derechos fundamentales */}
-                <details className="mb-2 border border-gray-200 rounded-md p-2 bg-gray-50">
-                  <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                    Ver derechos fundamentales disponibles
-                  </summary>
-                  <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
-                    {derechosFundamentales.map((derecho, index) => (
-                      <div
-                        key={index}
-                        className="text-xs p-2 hover:bg-indigo-50 rounded cursor-pointer"
-                        onClick={() => {
-                          const texto = `${derecho.derecho} (Art. ${derecho.articulo}): ${derecho.descripcion}`;
-                          setFormData(prev => ({
-                            ...prev,
-                            derechos_vulnerados: prev.derechos_vulnerados
-                              ? prev.derechos_vulnerados + '\n\n' + texto
-                              : texto
-                          }));
-                        }}
-                      >
-                        <span className="font-semibold">Art. {derecho.articulo}</span> - {derecho.derecho}
-                        {derecho.nota && <span className="text-gray-500 ml-2">({derecho.nota})</span>}
-                      </div>
-                    ))}
-                  </div>
-                </details>
-
-                <textarea
-                  name="derechos_vulnerados"
-                  value={formData.derechos_vulnerados}
-                  onChange={handleChange}
-                  required
-                  rows={4}
-                  placeholder="Ej: Derecho a la Salud (Art. 49), Derecho a la Vida (Art. 11)..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pretensiones *
-                </label>
-                <p className="text-xs text-gray-500 mb-2">
-                  Qué solicitas al juez
+                  {formData.tipo_documento === 'tutela'
+                    ? 'Qué solicitas que ordene el juez'
+                    : 'Qué información o actuación solicitas a la entidad'
+                  }
                 </p>
                 <textarea
                   name="pretensiones"
@@ -633,7 +708,10 @@ export default function NuevaTutela() {
                 type="submit"
                 className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {casoId ? 'Guardar Cambios' : 'Crear Tutela'}
+                {casoId
+                  ? 'Guardar Cambios'
+                  : (formData.tipo_documento === 'tutela' ? 'Crear Tutela' : 'Crear Derecho de Petición')
+                }
               </button>
             </div>
           </div>

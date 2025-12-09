@@ -83,8 +83,20 @@ export default function MisCasos() {
     );
   };
 
-  const getTipoDocumento = (tipo) => {
-    return tipo === 'tutela' ? '⚖️ Tutela' : '📄 Derecho de Petición';
+  const getTipoDocumentoBadge = (tipo) => {
+    if (tipo === 'tutela') {
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+          ⚖️ Tutela
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+          📝 Derecho de Petición
+        </span>
+      );
+    }
   };
 
   const formatearFecha = (fecha) => {
@@ -206,10 +218,8 @@ export default function MisCasos() {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {caso.nombre_solicitante || 'Sin nombre'}
                       </h3>
+                      {getTipoDocumentoBadge(caso.tipo_documento)}
                       {getEstadoBadge(caso.estado)}
-                      <span className="text-sm text-gray-500">
-                        {getTipoDocumento(caso.tipo_documento)}
-                      </span>
                     </div>
 
                     <div className="text-sm text-gray-600 space-y-1">
