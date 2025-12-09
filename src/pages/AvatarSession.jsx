@@ -5,6 +5,7 @@ import { Track } from 'livekit-client';
 import livekitService from '../services/livekitService';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import casoService from '../services/casoService';
 import TranscriptPanel from '../components/TranscriptPanel';
 
 // Componente para detectar participantes remotos (avatar)
@@ -112,6 +113,7 @@ export default function AvatarSession() {
   const [sessionTime, setSessionTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAvatarConnected, setIsAvatarConnected] = useState(false);
+  const [processingTranscription, setProcessingTranscription] = useState(false); // 🆕 Estado de procesamiento
   const { user } = useAuth();
   const navigate = useNavigate();
   const videoContainerRef = useRef(null);
@@ -174,18 +176,33 @@ export default function AvatarSession() {
   }, []);
 
   const handleDisconnect = async () => {
-    // 🆕 Finalizar la sesión en el backend antes de navegar
+    // Finalizar la sesión y procesar transcripción
     if (casoId) {
       try {
+        setProcessingTranscription(true); // Mostrar modal de carga
         console.log('🔚 Finalizando sesión - Caso ID:', casoId);
+
+        // 1. Finalizar la sesión en el backend
         await api.put(`/sesiones/${casoId}/finalizar`);
         console.log('✅ Sesión finalizada correctamente');
+
+        // 2. Procesar transcripción con IA para autollenar el formulario
+        console.log('🤖 Procesando transcripción con IA...');
+        await casoService.procesarTranscripcion(casoId);
+        console.log('✅ Transcripción procesada correctamente');
+
+        // 3. Redirigir al formulario de edición del caso (prellenado automáticamente)
+        navigate(`/app/tutela/${casoId}`);
       } catch (error) {
-        console.error('❌ Error finalizando sesión:', error);
-        // Continuar navegando incluso si hay error
+        console.error('❌ Error en el proceso de finalización:', error);
+        setProcessingTranscription(false);
+        // Si hay error, navegar al dashboard como fallback
+        navigate('/app/dashboard');
       }
+    } else {
+      // Si no hay casoId, ir al dashboard
+      navigate('/app/dashboard');
     }
-    navigate('/app/dashboard');
   };
 
   const toggleMute = () => {
@@ -479,6 +496,38 @@ export default function AvatarSession() {
           <RoomAudioRenderer />
         </LiveKitRoom>
       </div>
+
+      {/* Modal de Procesamiento de Transcripción */}
+      {processingTranscription && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center">
+            <div className="mb-6">
+              <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-blue-500 mx-auto mb-4"></div>
+              <h2 className="text-2xl font-bold text-white mb-2">Procesando Conversación</h2>
+              <p className="text-gray-400 text-sm mb-4">
+                Estamos analizando tu conversación con IA para autollenar tu formulario...
+              </p>
+              <div className="space-y-2 text-left text-sm text-gray-300">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>Sesión finalizada</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                  </div>
+                  <span>Extrayendo información con IA...</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Esto puede tomar unos segundos. No cierres esta ventana.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -50,6 +50,16 @@ export const casoService = {
     }
   },
 
+  async procesarTranscripcion(casoId) {
+    try {
+      const response = await api.post(`/casos/${casoId}/procesar-transcripcion`);
+      return response.data;
+    } catch (error) {
+      console.error('Error procesando transcripción:', error);
+      throw error;
+    }
+  },
+
   async analizarFortaleza(casoId) {
     try {
       const response = await api.post(`/casos/${casoId}/analizar-fortaleza`);
