@@ -28,11 +28,8 @@ export function useTranscriptions() {
     }
 
     const handleTranscriptionReceived = (segments, participant) => {
-      console.log('📝 Transcripción recibida:', {
-        segments,
-        participantIdentity: participant?.identity,
-        participantName: participant?.name
-      });
+      // Log eliminado para evitar spam en consola
+      // Solo logear si hay errores o en modo debug
 
       setTranscriptions((prev) => {
         const updated = [...prev];

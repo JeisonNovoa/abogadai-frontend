@@ -159,13 +159,23 @@ export default function AvatarSession() {
         setLoading(true);
         console.log('🚀 Iniciando sesión con el avatar...');
         const data = await livekitService.getToken();
+
+        console.log('📦 ========== RESPONSE DE /livekit/token ==========');
+        console.log('   Token recibido (length):', data.token?.length || 0);
+        console.log('   URL:', data.url);
+        console.log('   Room name:', data.room_name);
+        console.log('   Caso ID:', data.caso_id);
+        console.log('   User identity:', data.user_identity);
+        console.log('   User name:', data.user_name);
+        console.log('📦 ===============================================');
+
         setToken(data.token);
         setServerUrl(data.url);
         setCasoId(data.caso_id); // 🆕 Guardar el caso_id del response
         console.log('✅ Sesión iniciada - Caso ID:', data.caso_id);
         setLoading(false);
       } catch (err) {
-        console.error('Error inicializando sesión:', err);
+        console.error('❌ Error inicializando sesión:', err);
         setError('Error al conectar con el servidor. Por favor intenta de nuevo.');
         setLoading(false);
         isInitializingRef.current = false; // Reset en caso de error para permitir retry
