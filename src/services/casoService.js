@@ -60,16 +60,6 @@ export const casoService = {
     }
   },
 
-  async analizarFortaleza(casoId) {
-    try {
-      const response = await api.post(`/casos/${casoId}/analizar-fortaleza`);
-      return response.data;
-    } catch (error) {
-      console.error('Error analizando fortaleza:', error);
-      throw error;
-    }
-  },
-
   async validarCaso(casoId) {
     try {
       const response = await api.post(`/casos/${casoId}/validar`);

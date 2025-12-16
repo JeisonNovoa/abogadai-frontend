@@ -13,7 +13,6 @@ export default function NuevaTutela() {
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState(null);
   const [generando, setGenerando] = useState(false);
-  const [analizando, setAnalizando] = useState(false);
   const [documentoGenerado, setDocumentoGenerado] = useState('');
   const [modoEdicion, setModoEdicion] = useState(false);
   const autoGuardadoRef = useRef(null);
@@ -247,25 +246,6 @@ export default function NuevaTutela() {
     navigate('/app/dashboard');
   };
 
-  const handleAnalizarFortaleza = async () => {
-    if (!casoId) {
-      alert('Primero debes guardar el caso antes de analizar');
-      return;
-    }
-
-    try {
-      setAnalizando(true);
-      const casoActualizado = await casoService.analizarFortaleza(casoId);
-      setCaso(casoActualizado);
-      alert('Análisis completado. Revisa los resultados abajo.');
-    } catch (error) {
-      console.error('Error analizando fortaleza:', error);
-      const errorMsg = error.response?.data?.detail || 'Error al analizar el caso';
-      alert(errorMsg);
-    } finally {
-      setAnalizando(false);
-    }
-  };
 
   // Validar caso en tiempo real
   const validarCaso = async () => {
@@ -311,7 +291,7 @@ export default function NuevaTutela() {
       setCaso(casoActualizado);
       setDocumentoGenerado(casoActualizado.documento_generado);
       setModoEdicion(false);
-      alert('¡Documento generado exitosamente con IA!\n\nRevisa el análisis de calidad y jurisprudencia abajo.');
+      alert('¡Documento generado exitosamente con IA!');
     } catch (error) {
       console.error('Error generando documento:', error);
 
@@ -435,7 +415,6 @@ export default function NuevaTutela() {
           <div className="mb-8">
             <AnalisisDocumento
               caso={caso}
-              onAnalizarFortaleza={handleAnalizarFortaleza}
             />
           </div>
         )}
@@ -923,16 +902,8 @@ export default function NuevaTutela() {
                 <>
                   <button
                     type="button"
-                    onClick={handleAnalizarFortaleza}
-                    disabled={analizando || generando}
-                    className="px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {analizando ? 'Analizando...' : '🔍 Analizar Fortaleza'}
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleGenerarDocumento}
-                    disabled={generando || analizando}
+                    disabled={generando}
                     className="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     {generando ? 'Generando con IA...' : '🤖 Generar Documento con IA'}
