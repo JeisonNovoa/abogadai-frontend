@@ -149,7 +149,7 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
   if (!caso) {
     return (
-      <div className="text-center text-gray-400 py-8">
+      <div className="text-center text-neutral-400 py-8">
         No hay datos del caso para revisar
       </div>
     );
@@ -158,25 +158,29 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
   return (
     <div className="h-full flex gap-4 overflow-hidden">
       {/* Panel de conversación (30% izquierda) */}
-      <div className="w-[30%] bg-gray-800 rounded-lg border border-gray-700 overflow-hidden flex flex-col">
-        <div className="bg-gray-700 px-4 py-3 border-b border-gray-600">
-          <h3 className="font-semibold text-white text-sm">Conversación de Referencia</h3>
-          <p className="text-xs text-gray-400 mt-1">{conversacion.length} mensajes</p>
+      <div className="w-[30%] rounded-lg overflow-hidden flex flex-col" style={{ backgroundColor: 'white', border: '1px solid var(--neutral-300)' }}>
+        <div className="px-4 py-3 border-b" style={{ backgroundColor: 'var(--neutral-200)', borderColor: 'var(--neutral-300)' }}>
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Conversación de Referencia</h3>
+          <p className="text-xs mt-1" style={{ color: 'var(--neutral-600)' }}>{conversacion.length} mensajes</p>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {conversacion.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">
+            <p className="text-sm text-center py-8" style={{ color: 'var(--neutral-500)' }}>
               No hay conversación disponible
             </p>
           ) : (
             conversacion.map((msg, idx) => (
               <div
                 key={idx}
-                className={`p-3 rounded-lg text-sm ${
-                  msg.remitente === 'usuario'
-                    ? 'bg-blue-900 bg-opacity-40 text-blue-100'
-                    : 'bg-gray-700 text-gray-200'
-                }`}
+                className="p-3 rounded-lg text-sm"
+                style={{
+                  backgroundColor: msg.remitente === 'usuario'
+                    ? 'rgba(11, 109, 255, 0.1)'
+                    : 'var(--neutral-200)',
+                  color: msg.remitente === 'usuario'
+                    ? 'var(--color-primary-dark)'
+                    : 'var(--neutral-700)'
+                }}
               >
                 <div className="font-semibold text-xs mb-1 opacity-75">
                   {msg.remitente === 'usuario' ? 'Tú' : 'Asistente'}
@@ -189,21 +193,27 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
       </div>
 
       {/* Panel de revisión (70% derecha) */}
-      <div className="flex-1 bg-gray-800 rounded-lg border border-gray-700 overflow-hidden flex flex-col">
-        <div className="bg-gray-700 px-4 py-3 border-b border-gray-600 flex justify-between items-center">
+      <div className="flex-1 rounded-lg overflow-hidden flex flex-col" style={{ backgroundColor: 'white', border: '1px solid var(--neutral-300)' }}>
+        <div className="px-4 py-3 border-b flex justify-between items-center" style={{ backgroundColor: 'var(--neutral-200)', borderColor: 'var(--neutral-300)' }}>
           <div>
-            <h3 className="font-semibold text-white">Revisión Rápida de Datos</h3>
-            <p className="text-xs text-gray-400 mt-1">
+            <h3 className="font-semibold" style={{ color: 'var(--neutral-800)' }}>Revisión Rápida de Datos</h3>
+            <p className="text-xs mt-1" style={{ color: 'var(--neutral-600)' }}>
               {guardando ? 'Guardando...' : 'Auto-guardado activado'}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {validacion && (
-              <span className={`text-xs px-3 py-1 rounded-full ${
-                validacion.puede_generar
-                  ? 'bg-green-900 text-green-200'
-                  : 'bg-yellow-900 text-yellow-200'
-              }`}>
+              <span
+                className="text-xs px-3 py-1 rounded-full"
+                style={{
+                  backgroundColor: validacion.puede_generar
+                    ? 'var(--color-success-dark)'
+                    : 'var(--color-warning-dark)',
+                  color: validacion.puede_generar
+                    ? 'var(--color-success-light)'
+                    : 'var(--color-warning-light)'
+                }}
+              >
                 {validacion.puede_generar
                   ? '✓ Listo para generar'
                   : `${validacion.bloqueantes_faltantes.length} campos obligatorios faltantes`}
@@ -214,44 +224,47 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Datos del Solicitante (Solo Lectura) */}
-          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+          <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--neutral-100)', border: '1px solid var(--neutral-300)' }}>
             <div className="flex justify-between items-center mb-3">
-              <h4 className="font-semibold text-white text-sm">Datos del Solicitante</h4>
+              <h4 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Datos del Solicitante</h4>
               <button
                 onClick={() => navigate('/app/perfil')}
-                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition"
+                className="text-xs text-white px-3 py-1 rounded transition"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
               >
                 Ir a Perfil para editar
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <label className="text-gray-400 text-xs">Nombre</label>
-                <div className="text-gray-200 bg-gray-800 px-3 py-2 rounded mt-1">
+                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Nombre</label>
+                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
                   {caso.nombre_solicitante || '-'}
                 </div>
               </div>
               <div>
-                <label className="text-gray-400 text-xs">Identificación</label>
-                <div className="text-gray-200 bg-gray-800 px-3 py-2 rounded mt-1">
+                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Identificación</label>
+                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
                   {caso.identificacion_solicitante || '-'}
                 </div>
               </div>
               <div className="col-span-2">
-                <label className="text-gray-400 text-xs">Dirección</label>
-                <div className="text-gray-200 bg-gray-800 px-3 py-2 rounded mt-1">
+                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Dirección</label>
+                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
                   {caso.direccion_solicitante || '-'}
                 </div>
               </div>
               <div>
-                <label className="text-gray-400 text-xs">Teléfono</label>
-                <div className="text-gray-200 bg-gray-800 px-3 py-2 rounded mt-1">
+                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Teléfono</label>
+                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
                   {caso.telefono_solicitante || '-'}
                 </div>
               </div>
               <div>
-                <label className="text-gray-400 text-xs">Email</label>
-                <div className="text-gray-200 bg-gray-800 px-3 py-2 rounded mt-1">
+                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Email</label>
+                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
                   {caso.email_solicitante || '-'}
                 </div>
               </div>
@@ -259,15 +272,15 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
           </div>
 
           {/* Campos Críticos Editables */}
-          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-            <h4 className="font-semibold text-white text-sm mb-3">Campos Críticos</h4>
+          <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--neutral-100)', border: '1px solid var(--neutral-300)' }}>
+            <h4 className="font-semibold text-sm mb-3" style={{ color: 'var(--neutral-800)' }}>Campos Críticos</h4>
 
             {/* Entidad Accionada */}
             <div className="mb-3">
-              <label className="text-gray-300 text-sm flex items-center gap-2">
+              <label className="text-sm flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
                 Entidad {formData.tipo_documento === 'tutela' ? 'Accionada' : 'Destinataria'} *
                 {validacion?.bloqueantes_faltantes.includes('entidad_accionada') && (
-                  <span className="text-red-400 text-xs">Obligatorio</span>
+                  <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                 )}
               </label>
               <input
@@ -275,17 +288,18 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
                 name="entidad_accionada"
                 value={formData.entidad_accionada}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
                 placeholder="Ej: Ministerio de Salud"
               />
             </div>
 
             {/* Hechos */}
             <div className="mb-3">
-              <label className="text-gray-300 text-sm flex items-center gap-2">
+              <label className="text-sm flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
                 Hechos *
                 {validacion?.bloqueantes_faltantes.includes('hechos') && (
-                  <span className="text-red-400 text-xs">Obligatorio</span>
+                  <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                 )}
               </label>
               <textarea
@@ -293,7 +307,8 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
                 value={formData.hechos}
                 onChange={handleChange}
                 rows={4}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
                 placeholder="Describe los hechos..."
               />
             </div>
@@ -301,10 +316,10 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
             {/* Derechos Vulnerados (solo para tutela) */}
             {formData.tipo_documento === 'tutela' && (
               <div className="mb-3">
-                <label className="text-gray-300 text-sm flex items-center gap-2">
+                <label className="text-sm flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
                   Derechos Vulnerados *
                   {validacion?.bloqueantes_faltantes.includes('derechos_vulnerados') && (
-                    <span className="text-red-400 text-xs">Obligatorio</span>
+                    <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                   )}
                 </label>
                 <textarea
@@ -312,7 +327,8 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
                   value={formData.derechos_vulnerados}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
                   placeholder="Ej: Derecho a la Salud (Art. 49)"
                 />
               </div>
@@ -320,10 +336,10 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
             {/* Pretensiones */}
             <div className="mb-3">
-              <label className="text-gray-300 text-sm flex items-center gap-2">
+              <label className="text-sm flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
                 {formData.tipo_documento === 'tutela' ? 'Pretensiones' : 'Peticiones'} *
                 {validacion?.bloqueantes_faltantes.includes('pretensiones') && (
-                  <span className="text-red-400 text-xs">Obligatorio</span>
+                  <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                 )}
               </label>
               <textarea
@@ -331,46 +347,50 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
                 value={formData.pretensiones}
                 onChange={handleChange}
                 rows={3}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
                 placeholder="Qué solicitas..."
               />
             </div>
           </div>
 
           {/* Campos Sensibles */}
-          <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-            <h4 className="font-semibold text-white text-sm mb-3">Información Adicional (Recomendado)</h4>
+          <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--neutral-100)', border: '1px solid var(--neutral-300)' }}>
+            <h4 className="font-semibold text-sm mb-3" style={{ color: 'var(--neutral-800)' }}>Información Adicional (Recomendado)</h4>
 
             <div className="mb-3">
-              <label className="text-gray-300 text-sm">Dirección de la Entidad</label>
+              <label className="text-sm" style={{ color: 'var(--neutral-700)' }}>Dirección de la Entidad</label>
               <input
                 type="text"
                 name="direccion_entidad"
                 value={formData.direccion_entidad}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
               />
             </div>
 
             <div className="mb-3">
-              <label className="text-gray-300 text-sm">Representante Legal</label>
+              <label className="text-sm" style={{ color: 'var(--neutral-700)' }}>Representante Legal</label>
               <input
                 type="text"
                 name="representante_legal"
                 value={formData.representante_legal}
                 onChange={handleChange}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
               />
             </div>
 
             <div className="mb-3">
-              <label className="text-gray-300 text-sm">Pruebas y Documentos Anexos</label>
+              <label className="text-sm" style={{ color: 'var(--neutral-700)' }}>Pruebas y Documentos Anexos</label>
               <textarea
                 name="pruebas"
                 value={formData.pruebas}
                 onChange={handleChange}
                 rows={3}
-                className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--neutral-300)' }}
                 placeholder="Lista de documentos que anexarás..."
               />
             </div>
@@ -378,37 +398,40 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
           {/* Representación */}
           {formData.actua_en_representacion && (
-            <div className="bg-blue-900 bg-opacity-30 rounded-lg p-4 border border-blue-700">
-              <h4 className="font-semibold text-blue-200 text-sm mb-3">Datos del Representado</h4>
+            <div className="rounded-lg p-4 border" style={{ backgroundColor: 'rgba(11, 109, 255, 0.08)', borderColor: 'var(--color-primary)' }}>
+              <h4 className="font-semibold text-sm mb-3" style={{ color: 'var(--color-primary-dark)' }}>Datos del Representado</h4>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="text-blue-200 text-sm">Nombre del Representado</label>
+                  <label className="text-sm" style={{ color: 'var(--color-primary-dark)' }}>Nombre del Representado</label>
                   <input
                     type="text"
                     name="nombre_representado"
                     value={formData.nombre_representado}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--color-primary)' }}
                   />
                 </div>
                 <div>
-                  <label className="text-blue-200 text-sm">Identificación</label>
+                  <label className="text-sm" style={{ color: 'var(--color-primary-dark)' }}>Identificación</label>
                   <input
                     type="text"
                     name="identificacion_representado"
                     value={formData.identificacion_representado}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--color-primary)' }}
                   />
                 </div>
                 <div>
-                  <label className="text-blue-200 text-sm">Relación</label>
+                  <label className="text-sm" style={{ color: 'var(--color-primary-dark)' }}>Relación</label>
                   <select
                     name="relacion_representado"
                     value={formData.relacion_representado}
                     onChange={handleChange}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                    style={{ backgroundColor: 'white', color: 'var(--neutral-800)', border: '1px solid var(--color-primary)' }}
                   >
                     <option value="">Seleccionar...</option>
                     <option value="madre">Madre</option>
@@ -425,14 +448,14 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
         </div>
 
         {/* Footer con botón de generar */}
-        <div className="bg-gray-700 px-4 py-3 border-t border-gray-600 flex justify-between items-center">
-          <div className="text-sm text-gray-400">
+        <div className="px-4 py-3 border-t flex justify-between items-center" style={{ backgroundColor: 'var(--neutral-200)', borderColor: 'var(--neutral-300)' }}>
+          <div className="text-sm">
             {validacion?.bloqueantes_faltantes.length > 0 ? (
-              <span className="text-yellow-400">
+              <span style={{ color: 'var(--color-warning-dark)' }}>
                 Completa {validacion.bloqueantes_faltantes.length} campo(s) obligatorio(s)
               </span>
             ) : (
-              <span className="text-green-400">
+              <span style={{ color: 'var(--color-success-dark)' }}>
                 Todos los campos obligatorios completados
               </span>
             )}
@@ -440,11 +463,24 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
           <button
             onClick={handleGenerarDocumento}
             disabled={!validacion?.puede_generar || generando}
-            className={`px-6 py-2 rounded font-semibold transition ${
-              validacion?.puede_generar && !generando
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
+            className="px-6 py-2 rounded font-semibold transition text-white"
+            style={{
+              backgroundColor: validacion?.puede_generar && !generando
+                ? 'var(--color-success)'
+                : 'var(--neutral-400)',
+              cursor: !validacion?.puede_generar || generando ? 'not-allowed' : 'pointer',
+              opacity: !validacion?.puede_generar || generando ? '0.6' : '1'
+            }}
+            onMouseEnter={(e) => {
+              if (validacion?.puede_generar && !generando) {
+                e.currentTarget.style.backgroundColor = 'var(--color-success-dark)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (validacion?.puede_generar && !generando) {
+                e.currentTarget.style.backgroundColor = 'var(--color-success)';
+              }
+            }}
           >
             {generando ? 'Generando...' : 'Generar Documento'}
           </button>

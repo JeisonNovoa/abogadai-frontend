@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import casoService from '../services/casoService';
@@ -14,6 +14,8 @@ export default function NuevaTutela() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const modoVista = searchParams.get('mode') === 'view';
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState(null);
   const [generando, setGenerando] = useState(false);
@@ -384,6 +386,149 @@ export default function NuevaTutela() {
       toast.error('Error al descargar el DOCX');
     }
   };
+
+  // Vista de solo lectura para modo vista
+  if (modoVista && documentoGenerado) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--neutral-200)' }}>
+        {/* Header */}
+        <header className="shadow" style={{ backgroundColor: 'white' }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--neutral-800)' }}>
+                {formData.tipo_documento === 'tutela' ? 'Documento de Tutela' : 'Documento de Derecho de Petición'}
+              </h1>
+              <p className="text-sm mt-1" style={{ color: 'var(--neutral-600)' }}>
+                {formData.nombre_solicitante || 'Documento generado'}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="primary"
+                onClick={handleDescargarPDF}
+                leftIcon={
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                }
+              >
+                📑 Descargar PDF
+              </Button>
+              <Button
+                variant="neutral"
+                onClick={handleVolver}
+                leftIcon={
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                }
+              >
+                Volver
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Documento con estilos */}
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div
+            className="shadow-lg rounded-lg p-12"
+            style={{
+              backgroundColor: 'white',
+              border: '1px solid var(--neutral-300)',
+            }}
+          >
+            <div
+              className="documento-generado"
+              style={{
+                fontFamily: "'Times New Roman', Times, serif",
+                fontSize: '14px',
+                lineHeight: '1.8',
+                color: 'var(--neutral-900)',
+              }}
+            >
+              <style>
+                {`
+                  .documento-generado h1,
+                  .documento-generado h2,
+                  .documento-generado h3 {
+                    font-weight: bold;
+                    margin-top: 1.5em;
+                    margin-bottom: 0.75em;
+                    text-align: center;
+                  }
+
+                  .documento-generado h1 {
+                    font-size: 18px;
+                    text-transform: uppercase;
+                  }
+
+                  .documento-generado h2 {
+                    font-size: 16px;
+                  }
+
+                  .documento-generado h3 {
+                    font-size: 14px;
+                  }
+
+                  .documento-generado p {
+                    margin-bottom: 1em;
+                    text-align: justify;
+                  }
+
+                  .documento-generado strong {
+                    font-weight: bold;
+                  }
+
+                  .documento-generado em {
+                    font-style: italic;
+                  }
+
+                  .documento-generado ul,
+                  .documento-generado ol {
+                    margin-left: 2em;
+                    margin-bottom: 1em;
+                  }
+
+                  .documento-generado li {
+                    margin-bottom: 0.5em;
+                  }
+                `}
+              </style>
+              <pre
+                className="whitespace-pre-wrap leading-relaxed"
+                style={{
+                  fontFamily: "'Times New Roman', Times, serif",
+                  fontSize: '14px',
+                  lineHeight: '1.8',
+                }}
+              >
+                {documentoGenerado}
+              </pre>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Vista de carga en modo vista si no hay documento
+  if (modoVista && !documentoGenerado) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--neutral-200)' }}
+      >
+        <div className="text-center">
+          <div
+            className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4"
+            style={{ borderColor: 'var(--color-primary)' }}
+          ></div>
+          <p style={{ color: 'var(--neutral-600)' }}>Cargando documento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--neutral-200)' }}>

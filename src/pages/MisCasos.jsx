@@ -66,10 +66,10 @@ export default function MisCasos() {
   });
 
   const getEstadoBadge = (estado) => {
-    const badges = {
-      borrador: 'bg-yellow-100 text-yellow-800',
-      generado: 'bg-green-100 text-green-800',
-      finalizado: 'bg-blue-100 text-blue-800',
+    const badgeStyles = {
+      borrador: { backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning-dark)' },
+      generado: { backgroundColor: 'var(--color-success-light)', color: 'var(--color-success-dark)' },
+      finalizado: { backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' },
     };
     const textos = {
       borrador: '📝 Borrador',
@@ -77,8 +77,13 @@ export default function MisCasos() {
       finalizado: '🎯 Finalizado',
     };
 
+    const defaultStyle = { backgroundColor: 'var(--neutral-300)', color: 'var(--neutral-700)' };
+
     return (
-      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${badges[estado] || 'bg-gray-100 text-gray-800'}`}>
+      <span
+        className="px-3 py-1 text-xs font-semibold rounded-full"
+        style={badgeStyles[estado] || defaultStyle}
+      >
         {textos[estado] || estado}
       </span>
     );
@@ -87,13 +92,19 @@ export default function MisCasos() {
   const getTipoDocumentoBadge = (tipo) => {
     if (tipo === 'tutela') {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+        <span
+          className="px-3 py-1 text-xs font-semibold rounded-full"
+          style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}
+        >
           ⚖️ Tutela
         </span>
       );
     } else {
       return (
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+        <span
+          className="px-3 py-1 text-xs font-semibold rounded-full"
+          style={{ backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' }}
+        >
           📝 Derecho de Petición
         </span>
       );
@@ -293,7 +304,7 @@ export default function MisCasos() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => navigate(`/app/tutela/${caso.id}`)}
+                      onClick={() => navigate(`/app/tutela/${caso.id}?mode=view`)}
                       leftIcon={
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

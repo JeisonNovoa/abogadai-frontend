@@ -68,34 +68,17 @@ export default function Signup() {
       >
         {/* Logo y Header */}
         <div className="text-center">
-          <div
-            className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
-            style={{
-              backgroundColor: 'var(--color-primary)',
-              boxShadow: '0 8px 16px rgba(11, 109, 255, 0.3)',
-            }}
-          >
-            <svg
-              className="w-10 h-10"
-              style={{ color: 'white' }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-              />
-            </svg>
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <img
+              src="/assets/logo.png"
+              alt="Abogadai Logo"
+              className="w-16 h-16 object-contain"
+            />
+            <h1 className="text-4xl font-bold tracking-tight">
+              <span style={{ color: '#1a1a1a' }}>Abogad</span>
+              <span style={{ color: '#0b6dff' }}>ai</span>
+            </h1>
           </div>
-          <h1
-            className="text-4xl font-bold mb-2"
-            style={{ color: 'var(--neutral-800)' }}
-          >
-            Abogadai
-          </h1>
           <p
             className="text-sm"
             style={{ color: 'var(--neutral-600)' }}

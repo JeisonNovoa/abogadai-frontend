@@ -17,27 +17,28 @@ function TranscriptMessage({ text, role, timestamp, isFinal }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       <div
         className={`
-          max-w-[80%] rounded-lg px-4 py-2
-          ${isUser
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-700 text-white'
-          }
+          max-w-[80%] rounded-lg px-4 py-2 shadow-sm
           ${!isFinal ? 'opacity-70 italic' : 'opacity-100'}
           transition-opacity duration-200
         `}
+        style={{
+          backgroundColor: isUser ? 'var(--color-primary)' : 'var(--neutral-200)',
+          color: isUser ? 'white' : 'var(--neutral-800)',
+          border: isUser ? 'none' : '1px solid var(--neutral-300)'
+        }}
       >
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-semibold">
             {isUser ? '👤 Usuario' : '⚖️ Sofía'}
           </span>
-          <span className="text-xs opacity-70">{time}</span>
+          <span className="text-xs" style={{ opacity: 0.7 }}>{time}</span>
         </div>
         <p className="text-sm leading-relaxed break-words">{text}</p>
         {!isFinal && (
           <div className="flex items-center gap-1 mt-1">
-            <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
-            <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: isUser ? 'white' : 'var(--neutral-600)' }}></div>
+            <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: isUser ? 'white' : 'var(--neutral-600)', animationDelay: '0.2s' }}></div>
+            <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: isUser ? 'white' : 'var(--neutral-600)', animationDelay: '0.4s' }}></div>
           </div>
         )}
       </div>
@@ -62,15 +63,16 @@ export function TranscriptPanel() {
   }, [transcriptions]);
 
   return (
-    <div className="h-full flex flex-col bg-gray-800">
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'white' }}>
       {/* Header del panel */}
-      <div className="bg-gray-900 px-4 py-3 border-b border-gray-700">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="px-4 py-3 border-b" style={{ backgroundColor: 'var(--neutral-100)', borderColor: 'var(--neutral-300)' }}>
+        <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--neutral-800)' }}>
           <svg
             className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            style={{ color: 'var(--color-primary)' }}
           >
             <path
               strokeLinecap="round"
@@ -81,7 +83,7 @@ export function TranscriptPanel() {
           </svg>
           Transcripción en Vivo
         </h2>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs mt-1" style={{ color: 'var(--neutral-600)' }}>
           Todas las conversaciones se guardan automáticamente
         </p>
       </div>
@@ -90,15 +92,17 @@ export function TranscriptPanel() {
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar"
+        style={{ backgroundColor: 'var(--neutral-50)' }}
       >
         {transcriptions.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center text-gray-400">
+            <div className="text-center" style={{ color: 'var(--neutral-500)' }}>
               <svg
-                className="w-16 h-16 mx-auto mb-4 opacity-50"
+                className="w-16 h-16 mx-auto mb-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                style={{ color: 'var(--neutral-400)', opacity: 0.5 }}
               >
                 <path
                   strokeLinecap="round"
@@ -108,7 +112,7 @@ export function TranscriptPanel() {
                 />
               </svg>
               <p className="text-sm">Esperando conversación...</p>
-              <p className="text-xs mt-2 opacity-70">
+              <p className="text-xs mt-2" style={{ opacity: 0.7 }}>
                 Las transcripciones aparecerán aquí en tiempo real
               </p>
             </div>
@@ -130,10 +134,10 @@ export function TranscriptPanel() {
       </div>
 
       {/* Footer informativo */}
-      <div className="bg-gray-900 px-4 py-2 border-t border-gray-700">
-        <div className="flex items-center justify-between text-xs text-gray-400">
+      <div className="px-4 py-2 border-t" style={{ backgroundColor: 'var(--neutral-100)', borderColor: 'var(--neutral-300)' }}>
+        <div className="flex items-center justify-between text-xs" style={{ color: 'var(--neutral-600)' }}>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-success)' }}></div>
             <span>Grabando</span>
           </div>
           <span>{transcriptions.length} mensajes</span>
