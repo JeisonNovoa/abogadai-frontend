@@ -103,6 +103,19 @@ export const casoService = {
       throw error;
     }
   },
+
+  /**
+   * NUEVO: Obtener mensajes de la conversación del caso
+   */
+  async obtenerMensajes(casoId) {
+    try {
+      const response = await api.get(`/mensajes/caso/${casoId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo mensajes:', error);
+      throw error;
+    }
+  },
 };
 
 export default casoService;

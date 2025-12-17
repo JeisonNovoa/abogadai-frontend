@@ -3,7 +3,6 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import AppDashboard from './pages/AppDashboard';
 import AvatarSession from './pages/AvatarSession';
 import NuevaTutela from './pages/NuevaTutela';
 import MisCasos from './pages/MisCasos';
@@ -23,26 +22,10 @@ function App() {
 
           {/* Rutas protegidas */}
           <Route
-            path="/app/dashboard"
-            element={
-              <ProtectedRoute>
-                <AppDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/app/avatar"
             element={
               <ProtectedRoute>
                 <AvatarSession />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/app/tutela/nueva"
-            element={
-              <ProtectedRoute>
-                <NuevaTutela />
               </ProtectedRoute>
             }
           />
@@ -63,14 +46,16 @@ function App() {
             }
           />
           <Route
-            path="/perfil"
+            path="/app/perfil"
             element={
               <ProtectedRoute>
                 <Perfil />
               </ProtectedRoute>
             }
           />
-          <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+
+          {/* Ruta principal post-login: AvatarSession (según plan.md) */}
+          <Route path="/app" element={<Navigate to="/app/avatar" replace />} />
 
           {/* Ruta 404 */}
           <Route path="*" element={<Navigate to="/login" replace />} />

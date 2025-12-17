@@ -43,7 +43,7 @@ export default function MisCasos() {
   };
 
   const handleVolver = () => {
-    navigate('/app/dashboard');
+    navigate('/app/avatar');
   };
 
   // Filtrar casos
@@ -136,12 +136,6 @@ export default function MisCasos() {
             >
               ← Volver
             </button>
-            <button
-              onClick={() => navigate('/app/tutela/nueva')}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-            >
-              + Nueva Tutela
-            </button>
           </div>
         </div>
       </header>
@@ -193,16 +187,8 @@ export default function MisCasos() {
             <p className="text-gray-600 mb-6">
               {busqueda || filtro !== 'todos'
                 ? 'No se encontraron casos con los filtros aplicados'
-                : 'Aún no has creado ningún caso. Crea tu primera tutela para comenzar.'}
+                : 'Aún no has creado ningún caso. Los casos se crean mediante sesiones con el avatar.'}
             </p>
-            {!busqueda && filtro === 'todos' && (
-              <button
-                onClick={() => navigate('/app/tutela/nueva')}
-                className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-              >
-                Crear Primera Tutela
-              </button>
-            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">

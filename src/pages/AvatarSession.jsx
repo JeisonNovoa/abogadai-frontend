@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { LiveKitRoom, RoomAudioRenderer, useTracks, useLocalParticipant, useRemoteParticipants } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import livekitService from '../services/livekitService';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
 import casoService from '../services/casoService';
+import { useAuth } from '../context/AuthContext';
+import { useSessionState, SESSION_STATES } from '../hooks/useSessionState';
 import TranscriptPanel from '../components/TranscriptPanel';
+import RevisionRapida from '../components/RevisionRapida';
 
 // Componente para detectar participantes remotos (avatar)
 function AvatarDetector({ onAvatarConnected }) {
   const remoteParticipants = useRemoteParticipants();
 
   useEffect(() => {
-    // Cuando hay al menos 1 participante remoto, el avatar está conectado
     const isConnected = remoteParticipants.length > 0;
     onAvatarConnected?.(isConnected);
   }, [remoteParticipants, onAvatarConnected]);
@@ -21,18 +21,16 @@ function AvatarDetector({ onAvatarConnected }) {
   return null;
 }
 
-// Componente para controles de audio (debe estar dentro de LiveKitRoom)
+// Componente para controles de audio
 function AudioControls({ isMuted, onToggleMute, onMicActivity, isEnabled }) {
   const { localParticipant } = useLocalParticipant();
 
   useEffect(() => {
     if (localParticipant) {
-      // Solo habilitar micrófono si isEnabled es true
       localParticipant.setMicrophoneEnabled(isEnabled && !isMuted);
     }
   }, [isMuted, localParticipant, isEnabled]);
 
-  // Detectar actividad del micrófono
   useEffect(() => {
     if (!localParticipant) return;
 
@@ -50,11 +48,11 @@ function AudioControls({ isMuted, onToggleMute, onMicActivity, isEnabled }) {
   return null;
 }
 
+// Componente del video del avatar
 function VideoComponent({ onSpeakingChange, isSpeaking: isAvatarSpeaking }) {
   const tracks = useTracks([Track.Source.Camera]);
   const videoRef = useRef(null);
 
-  // Detectar cuando el avatar está hablando
   useEffect(() => {
     if (tracks.length > 0 && tracks[0]?.participant) {
       const participant = tracks[0].participant;
@@ -101,34 +99,47 @@ function VideoComponent({ onSpeakingChange, isSpeaking: isAvatarSpeaking }) {
   );
 }
 
+/**
+ * AvatarSession - Pantalla principal con máquina de estados
+ *
+ * Estados (según plan.md):
+ * A) PRE_LLAMADA: Listo para iniciar, sin conexión LiveKit
+ * B) EN_SESION: Conectado a LiveKit, conversación activa
+ * C) PROCESANDO: Procesando transcripción con IA
+ * D) REVISION: Revisión rápida de datos + generación de documento
+ */
 export default function AvatarSession() {
-  const [token, setToken] = useState('');
-  const [serverUrl, setServerUrl] = useState('');
-  const [casoId, setCasoId] = useState(null); // 🆕 Guardar el caso_id
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [isMuted, setIsMuted] = useState(true); // Iniciar muteado
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
-  const [sessionTime, setSessionTime] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAvatarConnected, setIsAvatarConnected] = useState(false);
-  const [processingTranscription, setProcessingTranscription] = useState(false); // 🆕 Estado de procesamiento
   const { user } = useAuth();
   const navigate = useNavigate();
-  const videoContainerRef = useRef(null);
-  const isInitializingRef = useRef(false); // 🔒 Bandera para evitar llamadas duplicadas
+  const sessionState = useSessionState();
+  const isInitializingRef = useRef(false);
 
-  // Contador de tiempo de sesión (solo cuando el avatar está conectado)
+  // Estados del componente
+  const [casoId, setCasoId] = useState(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
+  const [isAvatarConnected, setIsAvatarConnected] = useState(false);
+  const [sessionTime, setSessionTime] = useState(0);
+  const [conversacion, setConversacion] = useState([]);
+  const videoContainerRef = useRef(null);
+
+  // Inicializar: NO crear caso aún, solo mostrar pantalla Pre-llamada
   useEffect(() => {
-    if (!isAvatarConnected) return;
+    // El caso se creará cuando el usuario presione "Iniciar Sesión"
+    sessionState.goToPreLlamada();
+  }, []);
+
+  // Contador de tiempo de sesión (solo cuando está en sesión)
+  useEffect(() => {
+    if (!sessionState.isEnSesion || !isAvatarConnected) return;
 
     const interval = setInterval(() => {
       setSessionTime(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isAvatarConnected]);
+  }, [sessionState.isEnSesion, isAvatarConnected]);
 
   // Desmutear automáticamente cuando el avatar se conecta
   useEffect(() => {
@@ -137,7 +148,7 @@ export default function AvatarSession() {
     }
   }, [isAvatarConnected]);
 
-  // Formatear tiempo de sesión (HH:MM:SS)
+  // Formatear tiempo de sesión
   const formatSessionTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -145,185 +156,95 @@ export default function AvatarSession() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  useEffect(() => {
-    const initializeSession = async () => {
-      // 🔒 Evitar llamadas duplicadas causadas por React StrictMode
-      if (isInitializingRef.current) {
-        console.log('⚠️ Inicialización ya en proceso, saltando llamada duplicada...');
-        return;
-      }
+  // Handler: Iniciar sesión (crear caso + conectar a LiveKit)
+  const handleIniciarSesion = async () => {
+    try {
+      console.log('🚀 Paso 1: Creando caso...');
+      const casoData = await livekitService.iniciarSesion();
+      const nuevoCasoId = casoData.caso_id;
+      setCasoId(nuevoCasoId);
+      console.log('✅ Caso creado:', nuevoCasoId);
 
-      isInitializingRef.current = true;
+      console.log('🔌 Paso 2: Conectando a LiveKit...');
+      const tokenData = await livekitService.conectarSesion(nuevoCasoId);
+      console.log('✅ Token obtenido');
 
-      try {
-        setLoading(true);
-        console.log('🚀 Iniciando sesión con el avatar...');
-        const data = await livekitService.getToken();
-
-        console.log('📦 ========== RESPONSE DE /livekit/token ==========');
-        console.log('   Token recibido (length):', data.token?.length || 0);
-        console.log('   URL:', data.url);
-        console.log('   Room name:', data.room_name);
-        console.log('   Caso ID:', data.caso_id);
-        console.log('   User identity:', data.user_identity);
-        console.log('   User name:', data.user_name);
-        console.log('📦 ===============================================');
-
-        setToken(data.token);
-        setServerUrl(data.url);
-        setCasoId(data.caso_id); // 🆕 Guardar el caso_id del response
-        console.log('✅ Sesión iniciada - Caso ID:', data.caso_id);
-        setLoading(false);
-      } catch (err) {
-        console.error('❌ Error inicializando sesión:', err);
-        setError('Error al conectar con el servidor. Por favor intenta de nuevo.');
-        setLoading(false);
-        isInitializingRef.current = false; // Reset en caso de error para permitir retry
-      }
-    };
-
-    initializeSession();
-  }, []);
-
-  const handleDisconnect = async () => {
-    // Finalizar la sesión y procesar transcripción
-    if (casoId) {
-      try {
-        setProcessingTranscription(true); // Mostrar modal de carga
-        console.log('🔚 Finalizando sesión - Caso ID:', casoId);
-
-        // 1. Finalizar la sesión en el backend
-        await api.put(`/sesiones/${casoId}/finalizar`);
-        console.log('✅ Sesión finalizada correctamente');
-
-        // 2. Procesar transcripción con IA para autollenar el formulario
-        console.log('🤖 Procesando transcripción con IA...');
-        await casoService.procesarTranscripcion(casoId);
-        console.log('✅ Transcripción procesada correctamente');
-
-        // 3. Redirigir al formulario de edición del caso (prellenado automáticamente)
-        navigate(`/app/tutela/${casoId}`);
-      } catch (error) {
-        console.error('❌ Error en el proceso de finalización:', error);
-        setProcessingTranscription(false);
-        // Si hay error, navegar al dashboard como fallback
-        navigate('/app/dashboard');
-      }
-    } else {
-      // Si no hay casoId, ir al dashboard
-      navigate('/app/dashboard');
+      sessionState.goToEnSesion(tokenData);
+    } catch (err) {
+      console.error('❌ Error iniciando sesión:', err);
+      sessionState.setStateError('Error al iniciar sesión. Por favor intenta de nuevo.');
     }
   };
 
+  // Handler: Finalizar sesión
+  const handleFinalizarSesion = async () => {
+    if (!casoId) return;
+
+    try {
+      sessionState.goToProcesando();
+
+      console.log('🔚 Finalizando sesión...');
+      await livekitService.finalizarSesion(casoId);
+
+      console.log('🤖 Procesando transcripción con IA...');
+      const casoActualizado = await casoService.procesarTranscripcion(casoId);
+
+      console.log('📥 Cargando conversación...');
+      const mensajes = await casoService.obtenerMensajes(casoId);
+      setConversacion(mensajes);
+
+      console.log('✅ Pasando a revisión');
+      sessionState.goToRevision(casoActualizado);
+    } catch (err) {
+      console.error('❌ Error finalizando sesión:', err);
+      sessionState.setStateError('Error procesando la conversación.');
+    }
+  };
+
+  // Handler: Actualizar caso después de edición
+  const handleCasoUpdated = (casoActualizado) => {
+    sessionState.updateCasoData(casoActualizado);
+  };
+
+  // Handler: Documento generado
+  const handleDocumentoGenerado = (casoConDocumento) => {
+    sessionState.updateCasoData(casoConDocumento);
+    console.log('✅ Documento generado exitosamente');
+  };
+
+  // Toggle mute
   const toggleMute = () => {
-    // Solo permitir toggle si el avatar está conectado
     if (!isAvatarConnected) return;
     setIsMuted(!isMuted);
   };
 
-  const toggleFullscreen = async () => {
-    if (!videoContainerRef.current) return;
-
-    try {
-      if (!isFullscreen) {
-        if (videoContainerRef.current.requestFullscreen) {
-          await videoContainerRef.current.requestFullscreen();
-        } else if (videoContainerRef.current.webkitRequestFullscreen) {
-          await videoContainerRef.current.webkitRequestFullscreen();
-        } else if (videoContainerRef.current.msRequestFullscreen) {
-          await videoContainerRef.current.msRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          await document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-          await document.msExitFullscreen();
-        }
-      }
-    } catch (err) {
-      console.error('Error toggling fullscreen:', err);
-    }
-  };
-
-  // Escuchar cambios de fullscreen del navegador
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
   // Atajos de teclado
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignorar si el usuario está escribiendo en un input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        return;
-      }
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-      switch (e.key.toLowerCase()) {
-        case ' ': // Space - mutear/desmutear
-          e.preventDefault();
-          // Solo permitir si el avatar está conectado
-          if (isAvatarConnected) {
-            toggleMute();
-          }
-          break;
-        case 'f': // F - fullscreen
-          e.preventDefault();
-          toggleFullscreen();
-          break;
-        case 'escape': // Esc - salir de fullscreen
-          if (isFullscreen) {
-            e.preventDefault();
-            toggleFullscreen();
-          }
-          break;
-        default:
-          break;
+      if (e.key === ' ' && isAvatarConnected) {
+        e.preventDefault();
+        toggleMute();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMuted, isAvatarConnected]);
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isMuted, isFullscreen, isAvatarConnected]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-white text-lg">Conectando con tu asistente legal...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
+  // Error state
+  if (sessionState.error) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-red-900 text-white p-8 rounded-lg max-w-md">
-          <h2 className="text-2xl font-bold mb-4">Error de Conexión</h2>
-          <p className="mb-4">{error}</p>
+          <h2 className="text-2xl font-bold mb-4">Error</h2>
+          <p className="mb-4">{sessionState.error}</p>
           <button
-            onClick={() => navigate('/app/dashboard')}
+            onClick={() => window.location.reload()}
             className="w-full bg-red-700 hover:bg-red-600 text-white py-2 px-4 rounded"
           >
-            Volver al Dashboard
+            Intentar de nuevo
           </button>
         </div>
       </div>
@@ -336,208 +257,268 @@ export default function AvatarSession() {
       <div className="bg-gray-800 border-b border-gray-700 px-6 py-3">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-white">Sesión con Asistente Legal</h1>
+            <h1 className="text-xl font-bold text-white">Asistente Legal Abogadai</h1>
             <p className="text-gray-400 text-xs mt-0.5">
-              Hola {user?.nombre}, estoy aquí para ayudarte
+              {sessionState.isPreLlamada && 'Listo para iniciar tu sesión'}
+              {sessionState.isEnSesion && `Sesión activa - ${formatSessionTime(sessionTime)}`}
+              {sessionState.isProcesando && 'Procesando tu conversación...'}
+              {sessionState.isRevision && 'Revisión y generación de documento'}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Contador de tiempo */}
+            {/* Estado indicator */}
             <div className="flex items-center gap-2 bg-gray-700 px-4 py-2 rounded-lg">
-              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-white font-mono text-sm">{formatSessionTime(sessionTime)}</span>
+              {sessionState.isPreLlamada && (
+                <>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span className="text-white text-sm">Pre-llamada</span>
+                </>
+              )}
+              {sessionState.isEnSesion && (
+                <>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-white font-mono text-sm">{formatSessionTime(sessionTime)}</span>
+                </>
+              )}
+              {sessionState.isProcesando && (
+                <>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                  <span className="text-white text-sm">Procesando</span>
+                </>
+              )}
+              {sessionState.isRevision && (
+                <>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-white text-sm">Revisión</span>
+                </>
+              )}
             </div>
+
+            {/* Botones de navegación */}
             <button
-              onClick={handleDisconnect}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-sm"
+              onClick={() => navigate('/app/casos')}
+              className="text-gray-300 hover:text-white px-3 py-2 text-sm transition"
             >
-              Finalizar
+              Mis Casos
+            </button>
+            <button
+              onClick={() => navigate('/app/perfil')}
+              className="text-gray-300 hover:text-white px-3 py-2 text-sm transition"
+            >
+              Perfil
             </button>
           </div>
         </div>
       </div>
 
-      {/* LiveKit Room */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <LiveKitRoom
-          token={token}
-          serverUrl={serverUrl}
-          connect={true}
-          audio={true}
-          video={false}
-          onDisconnected={handleDisconnect}
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          {/* Componente para detectar cuando el avatar se conecta */}
-          <AvatarDetector onAvatarConnected={setIsAvatarConnected} />
+      {/* Contenido principal según estado */}
+      <div className="flex-1 overflow-hidden">
+        {/* ESTADO A: PRE-LLAMADA */}
+        {sessionState.isPreLlamada && (
+          <div className="h-full flex items-center justify-center p-8">
+            <div className="max-w-2xl text-center">
+              <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-2xl">
+                <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
 
-          {/* Componente de controles de audio */}
-          <AudioControls
-            isMuted={isMuted}
-            onToggleMute={toggleMute}
-            onMicActivity={setIsSpeaking}
-            isEnabled={isAvatarConnected}
-          />
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Hola {user?.nombre}, bienvenido
+              </h2>
+              <p className="text-gray-400 mb-8 text-lg">
+                Estoy lista para ayudarte a crear tu tutela o derecho de petición.
+                <br />
+                Presiona el botón para iniciar la conversación.
+              </p>
 
-          <div className="flex-1 flex gap-3 overflow-hidden p-4" ref={videoContainerRef}>
-            {/* Panel de Videos (60%) - Izquierda */}
-            <div className="w-[60%] flex flex-col gap-3">
-              {/* Grid de Avatar y Usuario (lado a lado) */}
-              <div className="grid grid-cols-2 gap-3 flex-1">
-                {/* Avatar (Izquierda) */}
-                <div
-                  className={`relative bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 ${
-                    isAvatarSpeaking ? 'ring-4 ring-blue-500 shadow-lg shadow-blue-500/50' : 'ring-2 ring-gray-700'
-                  }`}
-                >
-                  <VideoComponent
-                    onSpeakingChange={setIsAvatarSpeaking}
-                    isSpeaking={isAvatarSpeaking}
-                  />
-                  <div className="absolute bottom-3 left-3 bg-gray-900 bg-opacity-80 px-3 py-1 rounded text-white text-xs">
-                    Asistente Legal
-                  </div>
-                  {/* Botón de fullscreen */}
-                  <button
-                    onClick={toggleFullscreen}
-                    className="absolute top-3 right-3 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 text-white p-2 rounded-lg transition"
-                    title={isFullscreen ? "Salir de pantalla completa (Esc)" : "Pantalla completa (F)"}
+              <button
+                onClick={handleIniciarSesion}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg shadow-lg transition transform hover:scale-105"
+              >
+                Iniciar Sesión
+              </button>
+
+              <div className="mt-12 grid grid-cols-3 gap-6 text-sm text-gray-400">
+                <div>
+                  <svg className="w-8 h-8 mx-auto mb-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <p>Conversación con avatar</p>
+                </div>
+                <div>
+                  <svg className="w-8 h-8 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p>Revisión de datos</p>
+                </div>
+                <div>
+                  <svg className="w-8 h-8 mx-auto mb-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <p>Documento generado</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ESTADO B: EN SESIÓN */}
+        {sessionState.isEnSesion && sessionState.livekitToken && (
+          <LiveKitRoom
+            token={sessionState.livekitToken}
+            serverUrl={sessionState.livekitUrl}
+            connect={true}
+            audio={true}
+            video={false}
+            className="h-full flex flex-col overflow-hidden"
+          >
+            <AvatarDetector onAvatarConnected={setIsAvatarConnected} />
+            <AudioControls
+              isMuted={isMuted}
+              onToggleMute={toggleMute}
+              onMicActivity={setIsSpeaking}
+              isEnabled={isAvatarConnected}
+            />
+
+            <div className="flex-1 flex gap-3 overflow-hidden p-4" ref={videoContainerRef}>
+              {/* Panel de Videos (60%) */}
+              <div className="w-[60%] flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3 flex-1">
+                  {/* Avatar */}
+                  <div
+                    className={`relative bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 ${
+                      isAvatarSpeaking ? 'ring-4 ring-blue-500 shadow-lg shadow-blue-500/50' : 'ring-2 ring-gray-700'
+                    }`}
                   >
-                    {isFullscreen ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <VideoComponent onSpeakingChange={setIsAvatarSpeaking} isSpeaking={isAvatarSpeaking} />
+                    <div className="absolute bottom-3 left-3 bg-gray-900 bg-opacity-80 px-3 py-1 rounded text-white text-xs">
+                      Sofía - Asistente Legal
+                    </div>
+                  </div>
+
+                  {/* Usuario */}
+                  <div
+                    className={`relative bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 flex items-center justify-center ${
+                      isSpeaking ? 'ring-4 ring-green-500 shadow-lg shadow-green-500/50' : 'ring-2 ring-gray-700'
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-xl">
+                        <span className="text-4xl font-bold text-white">
+                          {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <p className="text-gray-400 text-base">{user?.nombre || 'Usuario'}</p>
+                      {isSpeaking && (
+                        <div className="mt-2 flex justify-center gap-1">
+                          <span className="w-1.5 h-6 bg-green-500 rounded-full animate-pulse"></span>
+                          <span className="w-1.5 h-8 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></span>
+                          <span className="w-1.5 h-6 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-gray-900 bg-opacity-80 px-3 py-1 rounded text-white text-xs">
+                      {user?.nombre || 'Tú'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Controles */}
+                <div className="flex justify-center items-center gap-3 py-2">
+                  <button
+                    onClick={toggleMute}
+                    disabled={!isAvatarConnected}
+                    className={`${
+                      !isAvatarConnected
+                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                        : isMuted
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-gray-700 hover:bg-gray-600'
+                    } text-white p-3 rounded-full transition shadow-lg`}
+                    title={!isAvatarConnected ? "Esperando..." : isMuted ? "Activar micrófono (Space)" : "Silenciar micrófono (Space)"}
+                  >
+                    {isMuted || !isAvatarConnected ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                       </svg>
                     )}
                   </button>
-                </div>
 
-                {/* Usuario (Derecha) */}
-                <div
-                  className={`relative bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 flex items-center justify-center ${
-                    isSpeaking ? 'ring-4 ring-green-500 shadow-lg shadow-green-500/50' : 'ring-2 ring-gray-700'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-xl">
-                      <span className="text-4xl font-bold text-white">
-                        {user?.nombre?.charAt(0)?.toUpperCase() || 'U'}
-                      </span>
+                  <button
+                    onClick={handleFinalizarSesion}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition text-sm font-semibold"
+                  >
+                    Finalizar Sesión
+                  </button>
+
+                  <div className="text-gray-500 text-xs ml-4">
+                    Atajo: <kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">Space</kbd> Mutear
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel de Transcripciones (40%) */}
+              <div className="w-[40%] flex-shrink-0" style={{ height: 'calc(100vh - 140px)' }}>
+                <div className="h-full rounded-lg overflow-hidden border border-gray-700 shadow-lg">
+                  <TranscriptPanel />
+                </div>
+              </div>
+            </div>
+
+            <RoomAudioRenderer />
+          </LiveKitRoom>
+        )}
+
+        {/* ESTADO C: PROCESANDO */}
+        {sessionState.isProcesando && (
+          <div className="h-full flex items-center justify-center">
+            <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center border border-gray-700">
+              <div className="mb-6">
+                <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                <h2 className="text-2xl font-bold text-white mb-2">Procesando Conversación</h2>
+                <p className="text-gray-400 text-sm mb-4">
+                  Estamos analizando tu conversación con IA para auto-llenar los campos...
+                </p>
+                <div className="space-y-2 text-left text-sm text-gray-300">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Sesión finalizada</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                     </div>
-                    <p className="text-gray-400 text-base">{user?.nombre || 'Usuario'}</p>
-                    {isSpeaking && (
-                      <div className="mt-2 flex justify-center gap-1">
-                        <span className="w-1.5 h-6 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></span>
-                        <span className="w-1.5 h-8 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></span>
-                        <span className="w-1.5 h-6 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute bottom-3 left-3 bg-gray-900 bg-opacity-80 px-3 py-1 rounded text-white text-xs">
-                    {user?.nombre || 'Tú'}
+                    <span>Extrayendo información con IA...</span>
                   </div>
                 </div>
               </div>
-
-              {/* Barra de controles */}
-              <div className="flex justify-center items-center gap-3 py-2">
-                <button
-                  onClick={toggleMute}
-                  disabled={!isAvatarConnected}
-                  className={`${
-                    !isAvatarConnected
-                      ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                      : isMuted
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-gray-700 hover:bg-gray-600'
-                  } text-white p-3 rounded-full transition shadow-lg`}
-                  title={
-                    !isAvatarConnected
-                      ? "Esperando al asistente..."
-                      : isMuted
-                      ? "Activar micrófono (Space)"
-                      : "Silenciar micrófono (Space)"
-                  }
-                >
-                  {isMuted || !isAvatarConnected ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                  )}
-                </button>
-
-                {!isAvatarConnected ? (
-                  <div className="text-gray-400 text-xs flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                    Esperando al asistente...
-                  </div>
-                ) : isSpeaking && (
-                  <div className="text-gray-400 text-xs flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                    Hablando...
-                  </div>
-                )}
-
-                <div className="text-gray-500 text-xs ml-4">
-                  Atajos: <kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">Space</kbd> Mutear • <kbd className="bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">F</kbd> Fullscreen
-                </div>
-              </div>
-            </div>
-
-            {/* Panel de Transcripciones (40%) - Derecha */}
-            <div className="w-[40%] flex-shrink-0" style={{ height: 'calc(100vh - 140px)' }}>
-              <div className="h-full rounded-lg overflow-hidden border border-gray-700 shadow-lg">
-                <TranscriptPanel />
-              </div>
-            </div>
-          </div>
-
-          {/* Audio Renderer - necesario para escuchar el audio */}
-          <RoomAudioRenderer />
-        </LiveKitRoom>
-      </div>
-
-      {/* Modal de Procesamiento de Transcripción */}
-      {processingTranscription && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            <div className="mb-6">
-              <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-blue-500 mx-auto mb-4"></div>
-              <h2 className="text-2xl font-bold text-white mb-2">Procesando Conversación</h2>
-              <p className="text-gray-400 text-sm mb-4">
-                Estamos analizando tu conversación con IA para autollenar tu formulario...
+              <p className="text-xs text-gray-500">
+                Esto puede tomar unos segundos. No cierres esta ventana.
               </p>
-              <div className="space-y-2 text-left text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Sesión finalizada</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                  </div>
-                  <span>Extrayendo información con IA...</span>
-                </div>
-              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Esto puede tomar unos segundos. No cierres esta ventana.
-            </p>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ESTADO D: REVISIÓN */}
+        {sessionState.isRevision && sessionState.casoData && (
+          <div className="h-full p-4">
+            <RevisionRapida
+              caso={sessionState.casoData}
+              conversacion={conversacion}
+              onCasoUpdated={handleCasoUpdated}
+              onDocumentoGenerado={handleDocumentoGenerado}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -243,7 +243,7 @@ export default function NuevaTutela() {
   };
 
   const handleVolver = () => {
-    navigate('/app/dashboard');
+    navigate('/app/casos');
   };
 
 
