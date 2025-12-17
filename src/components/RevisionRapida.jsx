@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 import casoService from '../services/casoService';
 import api from '../services/api';
+import Button from './Button';
+import Modal from './Modal';
 
 /**
  * Componente de Revisión Rápida (Estado D según plan.md)
@@ -15,6 +18,7 @@ import api from '../services/api';
  */
 export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated, onDocumentoGenerado }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [formData, setFormData] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [validacion, setValidacion] = useState(null);
@@ -106,7 +110,7 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
   // Generar documento
   const handleGenerarDocumento = async () => {
     if (!validacion?.puede_generar) {
-      alert('Por favor completa todos los campos obligatorios antes de generar el documento');
+      toast.warning('Por favor completa todos los campos obligatorios antes de generar el documento');
       return;
     }
 
@@ -134,10 +138,10 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      alert('Documento generado y descargado exitosamente');
+      toast.success('Documento generado y descargado exitosamente');
     } catch (error) {
       console.error('Error generando documento:', error);
-      alert(error.response?.data?.detail?.message || 'Error al generar el documento');
+      toast.error(error.response?.data?.detail?.message || 'Error al generar el documento');
     } finally {
       setGenerando(false);
     }
@@ -448,56 +452,99 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
       </div>
 
       {/* Modal de confirmación de datos sensibles */}
-      {confirmacionVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-            <h3 className="text-xl font-bold text-white mb-4">Confirmar Datos Sensibles</h3>
+      <Modal
+        isOpen={confirmacionVisible}
+        onClose={() => setConfirmacionVisible(false)}
+        title="Confirmar Datos Sensibles"
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="neutral"
+              onClick={() => setConfirmacionVisible(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="success"
+              onClick={confirmarYGenerar}
+            >
+              Confirmar y Generar
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          <p style={{ color: 'var(--neutral-700)' }}>
+            Por favor confirma que los siguientes datos son correctos:
+          </p>
 
-            <div className="space-y-3 mb-6 text-sm">
-              <p className="text-gray-300">Por favor confirma que los siguientes datos son correctos:</p>
-
-              <div className="bg-gray-700 rounded p-3">
-                <div className="text-gray-400 text-xs mb-1">Identificación</div>
-                <div className="text-white">{caso.identificacion_solicitante || 'No especificado'}</div>
-              </div>
-
-              <div className="bg-gray-700 rounded p-3">
-                <div className="text-gray-400 text-xs mb-1">Dirección</div>
-                <div className="text-white">{caso.direccion_solicitante || 'No especificado'}</div>
-              </div>
-
-              <div className="bg-gray-700 rounded p-3">
-                <div className="text-gray-400 text-xs mb-1">Entidad</div>
-                <div className="text-white">{formData.entidad_accionada || 'No especificado'}</div>
-              </div>
-
-              {formData.actua_en_representacion && (
-                <div className="bg-blue-900 bg-opacity-30 rounded p-3 border border-blue-700">
-                  <div className="text-blue-200 text-xs mb-1">Datos del Representado</div>
-                  <div className="text-white">
-                    {formData.nombre_representado} - {formData.identificacion_representado}
-                  </div>
-                </div>
-              )}
+          <div
+            className="rounded p-3"
+            style={{ backgroundColor: 'var(--neutral-200)' }}
+          >
+            <div
+              className="text-xs mb-1"
+              style={{ color: 'var(--neutral-600)' }}
+            >
+              Identificación
             </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmacionVisible(false)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarYGenerar}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition font-semibold"
-              >
-                Confirmar y Generar
-              </button>
+            <div style={{ color: 'var(--neutral-800)' }}>
+              {caso.identificacion_solicitante || 'No especificado'}
             </div>
           </div>
+
+          <div
+            className="rounded p-3"
+            style={{ backgroundColor: 'var(--neutral-200)' }}
+          >
+            <div
+              className="text-xs mb-1"
+              style={{ color: 'var(--neutral-600)' }}
+            >
+              Dirección
+            </div>
+            <div style={{ color: 'var(--neutral-800)' }}>
+              {caso.direccion_solicitante || 'No especificado'}
+            </div>
+          </div>
+
+          <div
+            className="rounded p-3"
+            style={{ backgroundColor: 'var(--neutral-200)' }}
+          >
+            <div
+              className="text-xs mb-1"
+              style={{ color: 'var(--neutral-600)' }}
+            >
+              Entidad
+            </div>
+            <div style={{ color: 'var(--neutral-800)' }}>
+              {formData.entidad_accionada || 'No especificado'}
+            </div>
+          </div>
+
+          {formData.actua_en_representacion && (
+            <div
+              className="rounded p-3 border"
+              style={{
+                backgroundColor: 'var(--color-info-light)',
+                borderColor: 'var(--color-primary)',
+              }}
+            >
+              <div
+                className="text-xs mb-1"
+                style={{ color: 'var(--color-primary-dark)' }}
+              >
+                Datos del Representado
+              </div>
+              <div style={{ color: 'var(--neutral-800)' }}>
+                {formData.nombre_representado} - {formData.identificacion_representado}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

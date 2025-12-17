@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import Button from '../components/Button';
+import Input from '../components/Input';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -21,87 +24,159 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
       await login(formData);
+      toast.success('Inicio de sesión exitoso');
       navigate('/app');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión');
+      toast.error(err.response?.data?.detail || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 animate-fadeIn"
+      style={{
+        background: 'linear-gradient(135deg, var(--neutral-900) 0%, var(--color-primary) 100%)',
+      }}
+    >
+      <div
+        className="max-w-md w-full space-y-8 p-8 rounded-2xl shadow-2xl animate-slideUp"
+        style={{
+          backgroundColor: 'white',
+          boxShadow: 'var(--shadow-xl)',
+        }}
+      >
+        {/* Logo y Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Abogadai</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <div
+            className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              boxShadow: '0 8px 16px rgba(11, 109, 255, 0.3)',
+            }}
+          >
+            <svg
+              className="w-10 h-10"
+              style={{ color: 'white' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+              />
+            </svg>
+          </div>
+          <h1
+            className="text-4xl font-bold mb-2"
+            style={{ color: 'var(--neutral-800)' }}
+          >
+            Abogadai
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: 'var(--neutral-600)' }}
+          >
             Inicia sesión en tu cuenta
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
+        {/* Formulario */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="tu@email.com"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="tu@email.com"
+              required
+              leftIcon={
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+            />
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Contraseña
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-              />
-            </div>
+            <Input
+              label="Contraseña"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              required
+              leftIcon={
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              }
+            />
           </div>
 
-          <div>
-            <button
+          <div className="space-y-4">
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={loading}
             >
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </button>
-          </div>
+            </Button>
 
-          <div className="text-center text-sm">
-            <span className="text-gray-600">¿No tienes cuenta? </span>
-            <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Regístrate aquí
-            </Link>
+            <div className="text-center text-sm">
+              <span style={{ color: 'var(--neutral-600)' }}>
+                ¿No tienes cuenta?{' '}
+              </span>
+              <Link
+                to="/signup"
+                style={{
+                  color: 'var(--color-primary)',
+                  fontWeight: 'var(--font-weight-medium)',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
+              >
+                Regístrate aquí
+              </Link>
+            </div>
           </div>
         </form>
+
+        {/* Footer decorativo */}
+        <div className="pt-6 border-t" style={{ borderColor: 'var(--neutral-300)' }}>
+          <p
+            className="text-xs text-center"
+            style={{ color: 'var(--neutral-500)' }}
+          >
+            Tu asistente legal inteligente
+          </p>
+        </div>
       </div>
     </div>
   );

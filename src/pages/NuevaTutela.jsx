@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import casoService from '../services/casoService';
 import api from '../services/api';
+import Button from '../components/Button';
+import Input from '../components/Input';
 import AnalisisDocumento from '../components/AnalisisDocumento';
 import { FieldValidationMessages, ValidationSummary } from '../components/ValidationMessage';
 
@@ -10,6 +13,7 @@ export default function NuevaTutela() {
   const { casoId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState(null);
   const [generando, setGenerando] = useState(false);
@@ -230,7 +234,7 @@ export default function NuevaTutela() {
       if (casoId) {
         // Actualizar caso existente
         await casoService.actualizarCaso(casoId, formData);
-        alert('Caso actualizado exitosamente');
+        toast.success('Caso actualizado exitosamente');
       } else {
         // Crear nuevo caso
         const nuevoCaso = await casoService.crearCaso(formData);
@@ -238,7 +242,7 @@ export default function NuevaTutela() {
       }
     } catch (error) {
       console.error('Error guardando caso:', error);
-      alert('Error al guardar el caso');
+      toast.error('Error al guardar el caso');
     }
   };
 
@@ -270,7 +274,7 @@ export default function NuevaTutela() {
 
   const handleGenerarDocumento = async () => {
     if (!casoId) {
-      alert('Primero debes guardar el caso antes de generar el documento');
+      toast.warning('Primero debes guardar el caso antes de generar el documento');
       return;
     }
 
@@ -281,7 +285,7 @@ export default function NuevaTutela() {
       const validacion = await validarCaso();
       if (validacion && !validacion.valido) {
         // No generamos, el usuario verá el resumen de errores en pantalla
-        alert('Por favor corrige los errores señalados antes de generar el documento');
+        toast.error('Por favor corrige los errores señalados antes de generar el documento');
         // Scroll al resumen de validación
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
@@ -291,7 +295,7 @@ export default function NuevaTutela() {
       setCaso(casoActualizado);
       setDocumentoGenerado(casoActualizado.documento_generado);
       setModoEdicion(false);
-      alert('¡Documento generado exitosamente con IA!');
+      toast.success('¡Documento generado exitosamente con IA!');
     } catch (error) {
       console.error('Error generando documento:', error);
 
@@ -304,14 +308,14 @@ export default function NuevaTutela() {
             errores: detail.errores || [],
             advertencias: detail.advertencias || []
           });
-          alert('El documento no se puede generar. Por favor corrige los errores señalados.');
+          toast.error('El documento no se puede generar. Por favor corrige los errores señalados.');
           window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
       }
 
       const errorMsg = error.response?.data?.detail?.message || error.response?.data?.detail || 'Error al generar el documento';
-      alert(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setGenerando(false);
     }
@@ -323,10 +327,10 @@ export default function NuevaTutela() {
     try {
       await casoService.actualizarCaso(casoId, { documento_generado: documentoGenerado });
       setModoEdicion(false);
-      alert('Documento guardado exitosamente');
+      toast.success('Documento guardado exitosamente');
     } catch (error) {
       console.error('Error guardando documento:', error);
-      alert('Error al guardar el documento');
+      toast.error('Error al guardar el documento');
     }
   };
 
@@ -358,7 +362,7 @@ export default function NuevaTutela() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error descargando PDF:', error);
-      alert('Error al descargar el PDF');
+      toast.error('Error al descargar el PDF');
     }
   };
 
@@ -377,34 +381,39 @@ export default function NuevaTutela() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error descargando DOCX:', error);
-      alert('Error al descargar el DOCX');
+      toast.error('Error al descargar el DOCX');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--neutral-200)' }}>
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="shadow" style={{ backgroundColor: 'white' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--neutral-800)' }}>
               {casoId
                 ? (formData.tipo_documento === 'tutela' ? 'Editar Tutela' : 'Editar Derecho de Petición')
                 : (formData.tipo_documento === 'tutela' ? 'Nueva Tutela' : 'Nuevo Derecho de Petición')
               }
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm mt-1" style={{ color: 'var(--neutral-600)' }}>
               {guardando && 'Guardando...'}
               {!guardando && ultimoGuardado && `Último guardado: ${ultimoGuardado.toLocaleTimeString()}`}
               {!guardando && !ultimoGuardado && casoId && 'Autoguardado activado'}
             </p>
           </div>
-          <button
+          <Button
+            variant="neutral"
             onClick={handleVolver}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            leftIcon={
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            }
           >
-            ← Volver al Dashboard
-          </button>
+            Volver al Dashboard
+          </Button>
         </div>
       </header>
 
@@ -430,14 +439,18 @@ export default function NuevaTutela() {
         <form id="formulario-caso" onSubmit={handleSubmit} className="space-y-8">
           {/* Selector de Tipo de Documento */}
           {!casoId && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Tipo de Documento Legal</h2>
+            <div className="shadow rounded-lg p-6" style={{ backgroundColor: 'white' }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>Tipo de Documento Legal</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none transition-all ${
                   formData.tipo_documento === 'tutela'
-                    ? 'border-indigo-600 ring-2 ring-indigo-600 bg-indigo-50'
-                    : 'border-gray-300 bg-white hover:border-gray-400'
-                }`}>
+                    ? 'ring-2'
+                    : 'hover:border-gray-400'
+                }`} style={
+                  formData.tipo_documento === 'tutela'
+                    ? { borderColor: 'var(--color-primary)', ringColor: 'var(--color-primary)', backgroundColor: 'var(--color-info-light)' }
+                    : { borderColor: 'var(--neutral-400)', backgroundColor: 'white' }
+                }>
                   <input
                     type="radio"
                     name="tipo_documento"
@@ -447,21 +460,25 @@ export default function NuevaTutela() {
                     className="sr-only"
                   />
                   <div className="flex flex-col flex-1">
-                    <span className="flex items-center text-sm font-medium text-gray-900">
+                    <span className="flex items-center text-sm font-medium" style={{ color: 'var(--neutral-800)' }}>
                       <span className="text-2xl mr-2">⚖️</span>
                       Tutela
                     </span>
-                    <span className="mt-1 text-xs text-gray-500">
+                    <span className="mt-1 text-xs" style={{ color: 'var(--neutral-600)' }}>
                       Para protección de derechos fundamentales (salud, vida, educación, etc.)
                     </span>
                   </div>
                 </label>
 
-                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
+                <label className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none transition-all ${
                   formData.tipo_documento === 'derecho_peticion'
-                    ? 'border-green-600 ring-2 ring-green-600 bg-green-50'
-                    : 'border-gray-300 bg-white hover:border-gray-400'
-                }`}>
+                    ? 'ring-2'
+                    : 'hover:border-gray-400'
+                }`} style={
+                  formData.tipo_documento === 'derecho_peticion'
+                    ? { borderColor: 'var(--color-success)', ringColor: 'var(--color-success)', backgroundColor: '#f0fdf4' }
+                    : { borderColor: 'var(--neutral-400)', backgroundColor: 'white' }
+                }>
                   <input
                     type="radio"
                     name="tipo_documento"
@@ -471,11 +488,11 @@ export default function NuevaTutela() {
                     className="sr-only"
                   />
                   <div className="flex flex-col flex-1">
-                    <span className="flex items-center text-sm font-medium text-gray-900">
+                    <span className="flex items-center text-sm font-medium" style={{ color: 'var(--neutral-800)' }}>
                       <span className="text-2xl mr-2">📝</span>
                       Derecho de Petición
                     </span>
-                    <span className="mt-1 text-xs text-gray-500">
+                    <span className="mt-1 text-xs" style={{ color: 'var(--neutral-600)' }}>
                       Para solicitar información, documentos o actuaciones administrativas
                     </span>
                   </div>
@@ -485,178 +502,151 @@ export default function NuevaTutela() {
           )}
 
           {/* Sección 1: Datos del Solicitante */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Datos del Solicitante</h2>
+          <div className="shadow rounded-lg p-6" style={{ backgroundColor: 'white' }}>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>1. Datos del Solicitante</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre Completo *
-                  {!casoId && formData.nombre_solicitante && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Desde perfil
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  name="nombre_solicitante"
-                  value={formData.nombre_solicitante}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <FieldValidationMessages fieldName="nombre_solicitante" validationResult={validationResult} />
-              </div>
+              <Input
+                label={
+                  <>
+                    Nombre Completo *
+                    {!casoId && formData.nombre_solicitante && (
+                      <span className="ml-2 text-xs px-2 py-1 rounded" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
+                        Desde perfil
+                      </span>
+                    )}
+                  </>
+                }
+                type="text"
+                name="nombre_solicitante"
+                value={formData.nombre_solicitante}
+                onChange={handleChange}
+                required
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Identificación (Cédula o NIT) *
-                  {!casoId && formData.identificacion_solicitante && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Desde perfil
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  name="identificacion_solicitante"
-                  value={formData.identificacion_solicitante}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="Ej: 1234567890 o 900123456-7"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                    erroresValidacion.identificacion_solicitante?.tipo === 'error'
-                      ? 'border-red-500 focus:ring-red-500'
-                      : erroresValidacion.identificacion_solicitante?.tipo === 'success'
-                      ? 'border-green-500 focus:ring-green-500'
-                      : 'border-gray-300 focus:ring-indigo-500'
-                  }`}
-                />
-                {erroresValidacion.identificacion_solicitante && (
-                  <p className={`text-xs mt-1 ${
-                    erroresValidacion.identificacion_solicitante.tipo === 'error' ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {erroresValidacion.identificacion_solicitante.mensaje}
-                  </p>
-                )}
-                <FieldValidationMessages fieldName="identificacion_solicitante" validationResult={validationResult} />
-              </div>
+              <Input
+                label={
+                  <>
+                    Identificación (Cédula o NIT) *
+                    {!casoId && formData.identificacion_solicitante && (
+                      <span className="ml-2 text-xs px-2 py-1 rounded" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
+                        Desde perfil
+                      </span>
+                    )}
+                  </>
+                }
+                type="text"
+                name="identificacion_solicitante"
+                value={formData.identificacion_solicitante}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Ej: 1234567890 o 900123456-7"
+                success={erroresValidacion.identificacion_solicitante?.tipo === 'success' ? erroresValidacion.identificacion_solicitante.mensaje : undefined}
+                error={erroresValidacion.identificacion_solicitante?.tipo === 'error' ? erroresValidacion.identificacion_solicitante.mensaje : undefined}
+                required
+              />
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Dirección *
-                  {!casoId && formData.direccion_solicitante && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Desde perfil
-                    </span>
-                  )}
-                </label>
-                <input
+                <Input
+                  label={
+                    <>
+                      Dirección *
+                      {!casoId && formData.direccion_solicitante && (
+                        <span className="ml-2 text-xs px-2 py-1 rounded" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
+                          Desde perfil
+                        </span>
+                      )}
+                    </>
+                  }
                   type="text"
                   name="direccion_solicitante"
                   value={formData.direccion_solicitante}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teléfono
-                  {!casoId && formData.telefono_solicitante && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Desde perfil
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="tel"
-                  name="telefono_solicitante"
-                  value={formData.telefono_solicitante}
-                  onChange={handleChange}
-                  placeholder="Ej: 3001234567 o 6012345678"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Formato: 10 dígitos para celular o 7 para fijo
-                </p>
-                <FieldValidationMessages fieldName="telefono_solicitante" validationResult={validationResult} />
-              </div>
+              <Input
+                label={
+                  <>
+                    Teléfono
+                    {!casoId && formData.telefono_solicitante && (
+                      <span className="ml-2 text-xs px-2 py-1 rounded" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
+                        Desde perfil
+                      </span>
+                    )}
+                  </>
+                }
+                type="tel"
+                name="telefono_solicitante"
+                value={formData.telefono_solicitante}
+                onChange={handleChange}
+                placeholder="Ej: 3001234567 o 6012345678"
+                helpText="Formato: 10 dígitos para celular o 7 para fijo"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                  {!casoId && formData.email_solicitante && (
-                    <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      Desde perfil
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="email"
-                  name="email_solicitante"
-                  value={formData.email_solicitante}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <FieldValidationMessages fieldName="email_solicitante" validationResult={validationResult} />
-              </div>
+              <Input
+                label={
+                  <>
+                    Email
+                    {!casoId && formData.email_solicitante && (
+                      <span className="ml-2 text-xs px-2 py-1 rounded" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
+                        Desde perfil
+                      </span>
+                    )}
+                  </>
+                }
+                type="email"
+                name="email_solicitante"
+                value={formData.email_solicitante}
+                onChange={handleChange}
+              />
             </div>
 
             {/* Representación de Terceros */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--neutral-300)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <input
                   type="checkbox"
                   name="actua_en_representacion"
                   checked={formData.actua_en_representacion}
                   onChange={handleChange}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  style={{ accentColor: 'var(--color-primary)' }}
+                  className="h-4 w-4 rounded"
                 />
-                <label className="text-sm font-medium text-gray-900">
+                <label className="text-sm font-medium" style={{ color: 'var(--neutral-800)' }}>
                   ¿Actúa en representación de otra persona? (menor, adulto mayor, persona con discapacidad, etc.)
                 </label>
               </div>
 
               {formData.actua_en_representacion && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-info-light)', border: '1px solid var(--color-primary)' }}>
                   <div className="md:col-span-2">
-                    <p className="text-sm text-blue-800 mb-4">
+                    <p className="text-sm mb-4" style={{ color: 'var(--color-primary-dark)' }}>
                       ℹ️ Proporciona los datos de la persona cuyos derechos están siendo representados
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombre Completo de la Persona Representada *
-                    </label>
-                    <input
-                      type="text"
-                      name="nombre_representado"
-                      value={formData.nombre_representado}
-                      onChange={handleChange}
-                      required={formData.actua_en_representacion}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+                  <Input
+                    label="Nombre Completo de la Persona Representada *"
+                    type="text"
+                    name="nombre_representado"
+                    value={formData.nombre_representado}
+                    onChange={handleChange}
+                    required={formData.actua_en_representacion}
+                  />
+
+                  <Input
+                    label="Identificación de la Persona Representada *"
+                    type="text"
+                    name="identificacion_representado"
+                    value={formData.identificacion_representado}
+                    onChange={handleChange}
+                    required={formData.actua_en_representacion}
+                    placeholder="Ej: 1234567890"
+                  />
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Identificación de la Persona Representada *
-                    </label>
-                    <input
-                      type="text"
-                      name="identificacion_representado"
-                      value={formData.identificacion_representado}
-                      onChange={handleChange}
-                      required={formData.actua_en_representacion}
-                      placeholder="Ej: 1234567890"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                       Relación con la Persona Representada *
                     </label>
                     <select
@@ -664,7 +654,8 @@ export default function NuevaTutela() {
                       value={formData.relacion_representado}
                       onChange={handleChange}
                       required={formData.actua_en_representacion}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
                     >
                       <option value="">Seleccione...</option>
                       <option value="madre">Madre</option>
@@ -678,7 +669,7 @@ export default function NuevaTutela() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                       Tipo de Persona Representada *
                     </label>
                     <select
@@ -686,7 +677,8 @@ export default function NuevaTutela() {
                       value={formData.tipo_representado}
                       onChange={handleChange}
                       required={formData.actua_en_representacion}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
                     >
                       <option value="">Seleccione...</option>
                       <option value="menor">Menor de edad</option>
@@ -701,74 +693,63 @@ export default function NuevaTutela() {
           </div>
 
           {/* Sección 2: Entidad Accionada/Destinataria */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="shadow rounded-lg p-6" style={{ backgroundColor: 'white' }}>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>
               2. {formData.tipo_documento === 'tutela' ? 'Entidad Accionada' : 'Entidad Destinataria'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de la Entidad *
-                </label>
-                <input
+                <Input
+                  label="Nombre de la Entidad *"
                   type="text"
                   name="entidad_accionada"
                   value={formData.entidad_accionada}
                   onChange={handleChange}
-                  list="entidades-sugerencias"
                   placeholder="Ej: Sanitas EPS, Ministerio de Salud..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  helpText="Comienza a escribir para ver sugerencias de entidades públicas"
+                  list="entidades-sugerencias"
+                  required
                 />
                 <datalist id="entidades-sugerencias">
                   {entidadesPublicas.map((entidad, index) => (
                     <option key={index} value={entidad} />
                   ))}
                 </datalist>
-                <p className="text-xs text-gray-500 mt-1">
-                  Comienza a escribir para ver sugerencias de entidades públicas
-                </p>
-                <FieldValidationMessages fieldName="entidad_accionada" validationResult={validationResult} />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Dirección de la Entidad
-                </label>
-                <input
+                <Input
+                  label="Dirección de la Entidad"
                   type="text"
                   name="direccion_entidad"
                   value={formData.direccion_entidad}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Representante Legal
-                </label>
-                <input
+                <Input
+                  label="Representante Legal"
                   type="text"
                   name="representante_legal"
                   value={formData.representante_legal}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Sección 3: Contenido del Documento */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="shadow rounded-lg p-6" style={{ backgroundColor: 'white' }}>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>
               3. Contenido {formData.tipo_documento === 'tutela' ? 'de la Tutela' : 'del Derecho de Petición'}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                   Hechos *
                 </label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs mb-2" style={{ color: 'var(--neutral-600)' }}>
                   {formData.tipo_documento === 'tutela'
                     ? 'Describe los hechos que fundamentan la tutela'
                     : 'Describe la situación que motiva tu petición'
@@ -779,7 +760,10 @@ export default function NuevaTutela() {
                   value={formData.hechos}
                   onChange={handleChange}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                 />
                 <FieldValidationMessages fieldName="hechos" validationResult={validationResult} />
               </div>
@@ -787,23 +771,26 @@ export default function NuevaTutela() {
               {/* Campo Derechos Vulnerados - Solo para Tutelas */}
               {formData.tipo_documento === 'tutela' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                     Derechos Vulnerados *
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs mb-2" style={{ color: 'var(--neutral-600)' }}>
                     Indica qué derechos fundamentales fueron vulnerados
                   </p>
 
                   {/* Selector de derechos fundamentales */}
-                  <details className="mb-2 border border-gray-200 rounded-md p-2 bg-gray-50">
-                    <summary className="cursor-pointer text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                  <details className="mb-2 rounded-md p-2" style={{ border: '1px solid var(--neutral-300)', backgroundColor: 'var(--neutral-200)' }}>
+                    <summary className="cursor-pointer text-sm font-medium" style={{ color: 'var(--color-primary)' }}>
                       Ver derechos fundamentales disponibles
                     </summary>
                     <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
                       {derechosFundamentales.map((derecho, index) => (
                         <div
                           key={index}
-                          className="text-xs p-2 hover:bg-indigo-50 rounded cursor-pointer"
+                          className="text-xs p-2 rounded cursor-pointer transition-colors"
+                          style={{ color: 'var(--neutral-700)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-info-light)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           onClick={() => {
                             const texto = `${derecho.derecho} (Art. ${derecho.articulo}): ${derecho.descripcion}`;
                             setFormData(prev => ({
@@ -815,7 +802,7 @@ export default function NuevaTutela() {
                           }}
                         >
                           <span className="font-semibold">Art. {derecho.articulo}</span> - {derecho.derecho}
-                          {derecho.nota && <span className="text-gray-500 ml-2">({derecho.nota})</span>}
+                          {derecho.nota && <span className="ml-2" style={{ color: 'var(--neutral-500)' }}>({derecho.nota})</span>}
                         </div>
                       ))}
                     </div>
@@ -827,17 +814,20 @@ export default function NuevaTutela() {
                     onChange={handleChange}
                     rows={4}
                     placeholder="Ej: Derecho a la Salud (Art. 49), Derecho a la Vida (Art. 11)..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                   />
                   <FieldValidationMessages fieldName="derechos_vulnerados" validationResult={validationResult} />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                   {formData.tipo_documento === 'tutela' ? 'Pretensiones' : 'Peticiones'} *
                 </label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs mb-2" style={{ color: 'var(--neutral-600)' }}>
                   {formData.tipo_documento === 'tutela'
                     ? 'Qué solicitas que ordene el juez'
                     : 'Qué información o actuación solicitas a la entidad'
@@ -848,16 +838,19 @@ export default function NuevaTutela() {
                   value={formData.pretensiones}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                 />
                 <FieldValidationMessages fieldName="pretensiones" validationResult={validationResult} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                   Fundamentos de Derecho
                 </label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs mb-2" style={{ color: 'var(--neutral-600)' }}>
                   Artículos, leyes o jurisprudencia que apoyan tu caso (opcional)
                 </p>
                 <textarea
@@ -865,15 +858,18 @@ export default function NuevaTutela() {
                   value={formData.fundamentos_derecho}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--neutral-700)' }}>
                   Pruebas y Documentos Anexos
                 </label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs mb-2" style={{ color: 'var(--neutral-600)' }}>
                   Lista los documentos que anexarás (diagnósticos, fórmulas médicas, fotografías, derechos de petición previos, certificaciones, etc.)
                 </p>
                 <textarea
@@ -882,7 +878,10 @@ export default function NuevaTutela() {
                   onChange={handleChange}
                   rows={4}
                   placeholder="Ej:&#10;- Diagnóstico médico del Dr. Juan Pérez (20/11/2024)&#10;- Fórmula médica para medicamento X&#10;- Derecho de petición radicado el 01/11/2024 (sin respuesta)&#10;- Fotografías del estado actual"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                 />
               </div>
             </div>
@@ -890,68 +889,77 @@ export default function NuevaTutela() {
 
           {/* Botones de acción */}
           <div className="flex justify-between items-center gap-4">
-            <button
+            <Button
               type="button"
+              variant="neutral"
               onClick={handleVolver}
-              className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              leftIcon={
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              }
             >
-              ← Volver
-            </button>
+              Volver
+            </Button>
             <div className="flex gap-4">
               {casoId && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleGenerarDocumento}
-                    disabled={generando}
-                    className="px-6 py-3 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {generando ? 'Generando con IA...' : '🤖 Generar Documento con IA'}
-                  </button>
-                </>
+                <Button
+                  type="button"
+                  variant="success"
+                  onClick={handleGenerarDocumento}
+                  loading={generando}
+                  disabled={generando}
+                >
+                  {generando ? 'Generando con IA...' : '🤖 Generar Documento con IA'}
+                </Button>
               )}
-              <button
+              <Button
                 type="submit"
-                className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                variant="primary"
+                size="lg"
               >
                 {casoId
                   ? 'Guardar Cambios'
                   : (formData.tipo_documento === 'tutela' ? 'Crear Tutela' : 'Crear Derecho de Petición')
                 }
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Documento generado */}
           {documentoGenerado && (
-            <div className="bg-white shadow rounded-lg p-6 mt-8">
+            <div className="shadow rounded-lg p-6 mt-8" style={{ backgroundColor: 'white' }}>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Documento Generado</h2>
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--neutral-800)' }}>Documento Generado</h2>
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
                     ✓ Generado con IA
                   </span>
                   {!modoEdicion && (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setModoEdicion(true)}
-                      className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
                     >
                       ✏️ Editar
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--neutral-200)', border: '1px solid var(--neutral-300)' }}>
                 {modoEdicion ? (
                   <textarea
                     value={documentoGenerado}
                     onChange={(e) => setDocumentoGenerado(e.target.value)}
                     rows={30}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                    style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 font-mono text-sm"
+                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
                   />
                 ) : (
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed" style={{ color: 'var(--neutral-800)' }}>
                     {documentoGenerado}
                   </pre>
                 )}
@@ -959,62 +967,68 @@ export default function NuevaTutela() {
 
               <div className="mt-4 flex justify-between items-center">
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="neutral"
+                    size="sm"
                     onClick={handleDescargarTXT}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     📄 Descargar TXT
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="error"
+                    size="sm"
                     onClick={handleDescargarPDF}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
                   >
                     📑 Descargar PDF
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={handleDescargarDOCX}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
                   >
                     📘 Descargar DOCX
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="flex gap-2">
                   {modoEdicion && (
                     <>
-                      <button
+                      <Button
                         type="button"
+                        variant="neutral"
+                        size="sm"
                         onClick={() => {
                           setModoEdicion(false);
                           cargarCaso();
                         }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                       >
                         Cancelar
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="primary"
+                        size="sm"
                         onClick={handleGuardarDocumento}
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                       >
                         💾 Guardar Cambios
-                      </button>
+                      </Button>
                     </>
                   )}
                   {!modoEdicion && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         navigator.clipboard.writeText(documentoGenerado);
-                        alert('Documento copiado al portapapeles');
+                        toast.success('Documento copiado al portapapeles');
                       }}
-                      className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100"
                     >
                       📋 Copiar
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

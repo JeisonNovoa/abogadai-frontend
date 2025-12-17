@@ -252,61 +252,95 @@ export default function AvatarSession() {
   }
 
   return (
-    <div className="h-screen bg-gray-900 flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--neutral-900)' }}>
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-3">
+      <div
+        className="border-b px-6 py-4"
+        style={{
+          backgroundColor: 'var(--neutral-800)',
+          borderColor: 'var(--neutral-700)',
+        }}
+      >
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-white">Asistente Legal Abogadai</h1>
-            <p className="text-gray-400 text-xs mt-0.5">
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: 'var(--neutral-100)' }}
+            >
+              Asistente Legal
+            </h1>
+            <p
+              className="text-xs mt-1"
+              style={{ color: 'var(--neutral-400)' }}
+            >
               {sessionState.isPreLlamada && 'Listo para iniciar tu sesión'}
               {sessionState.isEnSesion && `Sesión activa - ${formatSessionTime(sessionTime)}`}
               {sessionState.isProcesando && 'Procesando tu conversación...'}
               {sessionState.isRevision && 'Revisión y generación de documento'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Estado indicator */}
-            <div className="flex items-center gap-2 bg-gray-700 px-4 py-2 rounded-lg">
-              {sessionState.isPreLlamada && (
-                <>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <span className="text-white text-sm">Pre-llamada</span>
-                </>
-              )}
-              {sessionState.isEnSesion && (
-                <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-white font-mono text-sm">{formatSessionTime(sessionTime)}</span>
-                </>
-              )}
-              {sessionState.isProcesando && (
-                <>
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="text-white text-sm">Procesando</span>
-                </>
-              )}
-              {sessionState.isRevision && (
-                <>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-white text-sm">Revisión</span>
-                </>
-              )}
-            </div>
 
-            {/* Botones de navegación */}
-            <button
-              onClick={() => navigate('/app/casos')}
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm transition"
-            >
-              Mis Casos
-            </button>
-            <button
-              onClick={() => navigate('/app/perfil')}
-              className="text-gray-300 hover:text-white px-3 py-2 text-sm transition"
-            >
-              Perfil
-            </button>
+          {/* Estado indicator */}
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded-lg"
+            style={{ backgroundColor: 'var(--neutral-700)' }}
+          >
+            {sessionState.isPreLlamada && (
+              <>
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: 'var(--neutral-400)' }}
+                ></div>
+                <span
+                  className="text-sm"
+                  style={{ color: 'var(--neutral-100)' }}
+                >
+                  Pre-llamada
+                </span>
+              </>
+            )}
+            {sessionState.isEnSesion && (
+              <>
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: 'var(--color-success)' }}
+                ></div>
+                <span
+                  className="font-mono text-sm"
+                  style={{ color: 'var(--neutral-100)' }}
+                >
+                  {formatSessionTime(sessionTime)}
+                </span>
+              </>
+            )}
+            {sessionState.isProcesando && (
+              <>
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: 'var(--color-warning)' }}
+                ></div>
+                <span
+                  className="text-sm"
+                  style={{ color: 'var(--neutral-100)' }}
+                >
+                  Procesando
+                </span>
+              </>
+            )}
+            {sessionState.isRevision && (
+              <>
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                ></div>
+                <span
+                  className="text-sm"
+                  style={{ color: 'var(--neutral-100)' }}
+                >
+                  Revisión
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
