@@ -221,12 +221,6 @@ export default function AvatarSession() {
     return () => clearInterval(interval);
   }, [sessionState.isEnSesion, isAvatarConnected]);
 
-  // Desmutear automáticamente cuando el avatar se conecta
-  useEffect(() => {
-    if (isAvatarConnected && isMuted) {
-      setIsMuted(false);
-    }
-  }, [isAvatarConnected]);
 
   // Formatear tiempo de sesión
   const formatSessionTime = (seconds) => {
