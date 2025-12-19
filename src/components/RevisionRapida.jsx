@@ -24,6 +24,7 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
   const [validacion, setValidacion] = useState(null);
   const [generando, setGenerando] = useState(false);
   const [confirmacionVisible, setConfirmacionVisible] = useState(false);
+  const [progressStep, setProgressStep] = useState(0);
   const autoGuardadoRef = useRef(null);
 
   // Inicializar formData con datos del caso
@@ -124,26 +125,41 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
     try {
       setGenerando(true);
+      setProgressStep(0);
+
+      // Paso 1: Validando información
+      setProgressStep(1);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Paso 2: Procesando con IA
+      setProgressStep(2);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Paso 3: Creando documento
+      setProgressStep(3);
       const casoActualizado = await casoService.generarDocumento(caso.id);
       onDocumentoGenerado?.(casoActualizado);
 
-      // Descargar automáticamente PDF
-      const pdfBlob = await casoService.descargarPDF(caso.id);
-      const url = URL.createObjectURL(new Blob([pdfBlob], { type: 'application/pdf' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${formData.tipo_documento}_${caso.nombre_solicitante || 'documento'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Paso 4: Finalizando
+      setProgressStep(4);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      toast.success('Documento generado y descargado exitosamente');
+      // Mostrar toast de éxito
+      toast.success('Documento generado');
+
+      // Redireccionar al caso en modo vista
+      setTimeout(() => {
+        navigate(`/app/tutela/${caso.id}?mode=view`);
+      }, 800);
+
     } catch (error) {
       console.error('Error generando documento:', error);
       toast.error(error.response?.data?.detail?.message || 'Error al generar el documento');
+      setProgressStep(0);
     } finally {
-      setGenerando(false);
+      setTimeout(() => {
+        setGenerando(false);
+      }, 1000);
     }
   };
 
@@ -481,6 +497,64 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
           </button>
         </div>
       </div>
+
+      {/* Progress Stepper Modal */}
+      {generando && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className="rounded-lg p-6 shadow-xl" style={{ backgroundColor: 'white', minWidth: '400px' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>
+              🤖 Generando Documento
+            </h3>
+            <div className="space-y-3">
+              {/* Paso 1 */}
+              <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${progressStep >= 1 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  {progressStep > 1 ? '✓' : '1'}
+                </div>
+                <span style={{ color: progressStep >= 1 ? 'var(--neutral-800)' : 'var(--neutral-500)' }}>
+                  Validando información
+                </span>
+              </div>
+
+              {/* Paso 2 */}
+              <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${progressStep >= 2 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  {progressStep > 2 ? '✓' : progressStep === 2 ? '⟳' : '2'}
+                </div>
+                <span style={{ color: progressStep >= 2 ? 'var(--neutral-800)' : 'var(--neutral-500)' }}>
+                  Procesando con IA
+                </span>
+              </div>
+
+              {/* Paso 3 */}
+              <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${progressStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  {progressStep > 3 ? '✓' : progressStep === 3 ? '⟳' : '3'}
+                </div>
+                <span style={{ color: progressStep >= 3 ? 'var(--neutral-800)' : 'var(--neutral-500)' }}>
+                  Creando documento
+                </span>
+              </div>
+
+              {/* Paso 4 */}
+              <div className="flex items-center gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold ${progressStep >= 4 ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  {progressStep > 4 ? '✓' : progressStep === 4 ? '⟳' : '4'}
+                </div>
+                <span style={{ color: progressStep >= 4 ? 'var(--neutral-800)' : 'var(--neutral-500)' }}>
+                  Finalizando
+                </span>
+              </div>
+            </div>
+
+            {progressStep === 4 && (
+              <p className="text-sm mt-4 text-center" style={{ color: 'var(--color-success-dark)' }}>
+                Abriendo caso...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de confirmación de datos sensibles */}
       <Modal

@@ -280,18 +280,43 @@ export default function AvatarSession() {
     try {
       console.log('🚪 Abandonando llamada...');
 
-      // Eliminar caso si existe
       if (casoId) {
-        console.log('🗑️ Eliminando caso:', casoId);
-        await casoService.eliminarCaso(casoId);
+        // Paso 1: Finalizar sesión de LiveKit (colgar la llamada)
+        console.log('📞 Finalizando sesión de LiveKit...');
+        try {
+          await livekitService.finalizarSesion(casoId);
+          console.log('✅ Sesión de LiveKit finalizada');
+        } catch (livekitError) {
+          // Si falla, no bloquear el flujo
+          console.warn('⚠️ No se pudo finalizar la sesión de LiveKit:', livekitError.message);
+        }
+
+        // Paso 2: Eliminar el caso
+        console.log('🗑️ Intentando eliminar caso:', casoId);
+        try {
+          await casoService.eliminarCaso(casoId);
+          console.log('✅ Caso eliminado exitosamente');
+        } catch (deleteError) {
+          // Si el caso no existe (404), no es un error crítico
+          if (deleteError.response?.status === 404) {
+            console.log('ℹ️ El caso ya no existe en la base de datos');
+          } else {
+            console.warn('⚠️ No se pudo eliminar el caso:', deleteError.message);
+          }
+        }
       }
 
-      // Volver al dashboard
-      navigate('/app/casos');
+      // Paso 3: Resetear el estado de la sesión a PRE_LLAMADA
+      console.log('🔄 Reseteando estado de sesión...');
+      sessionState.reset();
+      console.log('✅ Estado reseteado - Volviendo a pantalla inicial');
+
+      // Nota: No necesitamos navigate() porque ya estamos en /app/avatar
+      // El reset() hace que se muestre la pantalla PRE_LLAMADA automáticamente
     } catch (err) {
       console.error('❌ Error abandonando llamada:', err);
-      // Aún así, intentar volver al dashboard
-      navigate('/app/casos');
+      // Resetear de todos modos e intentar volver a la interfaz principal
+      sessionState.reset();
     }
   };
 

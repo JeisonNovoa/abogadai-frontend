@@ -336,19 +336,6 @@ export default function NuevaTutela() {
     }
   };
 
-  const handleDescargarTXT = () => {
-    const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
-    const blob = new Blob([documentoGenerado], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${tipoDocNombre}_${formData.nombre_solicitante || 'documento'}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handleDescargarPDF = async () => {
     try {
       const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
@@ -365,25 +352,6 @@ export default function NuevaTutela() {
     } catch (error) {
       console.error('Error descargando PDF:', error);
       toast.error('Error al descargar el PDF');
-    }
-  };
-
-  const handleDescargarDOCX = async () => {
-    try {
-      const tipoDocNombre = formData.tipo_documento === 'tutela' ? 'tutela' : 'derecho_peticion';
-      const response = await casoService.descargarDOCX(casoId);
-      const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${tipoDocNombre}_${formData.nombre_solicitante || 'documento'}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error descargando DOCX:', error);
-      toast.error('Error al descargar el DOCX');
     }
   };
 
@@ -1100,27 +1068,11 @@ export default function NuevaTutela() {
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    variant="neutral"
-                    size="sm"
-                    onClick={handleDescargarTXT}
-                  >
-                    📄 Descargar TXT
-                  </Button>
-                  <Button
-                    type="button"
                     variant="error"
                     size="sm"
                     onClick={handleDescargarPDF}
                   >
                     📑 Descargar PDF
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={handleDescargarDOCX}
-                  >
-                    📘 Descargar DOCX
                   </Button>
                 </div>
 
