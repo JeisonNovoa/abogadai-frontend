@@ -6,6 +6,7 @@ import casoService from '../services/casoService';
 import api from '../services/api';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import DocumentoViewer from '../components/DocumentoViewer';
 import AnalisisDocumento from '../components/AnalisisDocumento';
 import { FieldValidationMessages, ValidationSummary } from '../components/ValidationMessage';
 
@@ -355,6 +356,7 @@ export default function NuevaTutela() {
     }
   };
 
+
   // Vista de solo lectura para modo vista
   if (modoVista && documentoGenerado) {
     return (
@@ -372,17 +374,6 @@ export default function NuevaTutela() {
             </div>
             <div className="flex gap-2">
               <Button
-                variant="primary"
-                onClick={handleDescargarPDF}
-                leftIcon={
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                }
-              >
-                📑 Descargar PDF
-              </Button>
-              <Button
                 variant="neutral"
                 onClick={handleVolver}
                 leftIcon={
@@ -397,84 +388,15 @@ export default function NuevaTutela() {
           </div>
         </header>
 
-        {/* Documento con estilos */}
+        {/* Documento con sistema de paywall */}
         <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div
-            className="shadow-lg rounded-lg p-12"
-            style={{
-              backgroundColor: 'white',
-              border: '1px solid var(--neutral-300)',
+          <DocumentoViewer
+            casoId={casoId}
+            onPagoExitoso={() => {
+              cargarCaso();
+              toast.success('Documento desbloqueado correctamente');
             }}
-          >
-            <div
-              className="documento-generado"
-              style={{
-                fontFamily: "'Times New Roman', Times, serif",
-                fontSize: '14px',
-                lineHeight: '1.8',
-                color: 'var(--neutral-900)',
-              }}
-            >
-              <style>
-                {`
-                  .documento-generado h1,
-                  .documento-generado h2,
-                  .documento-generado h3 {
-                    font-weight: bold;
-                    margin-top: 1.5em;
-                    margin-bottom: 0.75em;
-                    text-align: center;
-                  }
-
-                  .documento-generado h1 {
-                    font-size: 18px;
-                    text-transform: uppercase;
-                  }
-
-                  .documento-generado h2 {
-                    font-size: 16px;
-                  }
-
-                  .documento-generado h3 {
-                    font-size: 14px;
-                  }
-
-                  .documento-generado p {
-                    margin-bottom: 1em;
-                    text-align: justify;
-                  }
-
-                  .documento-generado strong {
-                    font-weight: bold;
-                  }
-
-                  .documento-generado em {
-                    font-style: italic;
-                  }
-
-                  .documento-generado ul,
-                  .documento-generado ol {
-                    margin-left: 2em;
-                    margin-bottom: 1em;
-                  }
-
-                  .documento-generado li {
-                    margin-bottom: 0.5em;
-                  }
-                `}
-              </style>
-              <pre
-                className="whitespace-pre-wrap leading-relaxed"
-                style={{
-                  fontFamily: "'Times New Roman', Times, serif",
-                  fontSize: '14px',
-                  lineHeight: '1.8',
-                }}
-              >
-                {documentoGenerado}
-              </pre>
-            </div>
-          </div>
+          />
         </main>
       </div>
     );
@@ -1025,96 +947,20 @@ export default function NuevaTutela() {
             </div>
           </div>
 
-          {/* Documento generado */}
-          {documentoGenerado && (
+          {/* Documento generado con sistema de paywall */}
+          {documentoGenerado && casoId && (
             <div className="shadow rounded-lg p-6 mt-8" style={{ backgroundColor: 'white' }}>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold" style={{ color: 'var(--neutral-800)' }}>Documento Generado</h2>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 text-xs font-semibold rounded-full" style={{ color: 'var(--color-success)', backgroundColor: '#f0fdf4' }}>
-                    ✓ Generado con IA
-                  </span>
-                  {!modoEdicion && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setModoEdicion(true)}
-                    >
-                      ✏️ Editar
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--neutral-800)' }}>
+                Documento Generado
+              </h2>
 
-              <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--neutral-200)', border: '1px solid var(--neutral-300)' }}>
-                {modoEdicion ? (
-                  <textarea
-                    value={documentoGenerado}
-                    onChange={(e) => setDocumentoGenerado(e.target.value)}
-                    rows={30}
-                    style={{ borderColor: 'var(--neutral-400)', color: 'var(--neutral-800)' }}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 font-mono text-sm"
-                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--neutral-400)'}
-                  />
-                ) : (
-                  <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed" style={{ color: 'var(--neutral-800)' }}>
-                    {documentoGenerado}
-                  </pre>
-                )}
-              </div>
-
-              <div className="mt-4 flex justify-between items-center">
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="error"
-                    size="sm"
-                    onClick={handleDescargarPDF}
-                  >
-                    📑 Descargar PDF
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  {modoEdicion && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="neutral"
-                        size="sm"
-                        onClick={() => {
-                          setModoEdicion(false);
-                          cargarCaso();
-                        }}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        onClick={handleGuardarDocumento}
-                      >
-                        💾 Guardar Cambios
-                      </Button>
-                    </>
-                  )}
-                  {!modoEdicion && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(documentoGenerado);
-                        toast.success('Documento copiado al portapapeles');
-                      }}
-                    >
-                      📋 Copiar
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <DocumentoViewer
+                casoId={casoId}
+                onPagoExitoso={() => {
+                  cargarCaso();
+                  toast.success('Documento desbloqueado correctamente');
+                }}
+              />
             </div>
           )}
         </form>

@@ -92,18 +92,6 @@ export const casoService = {
     }
   },
 
-  async descargarDOCX(casoId) {
-    try {
-      const response = await api.get(`/casos/${casoId}/descargar/docx`, {
-        responseType: 'blob',
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error descargando DOCX:', error);
-      throw error;
-    }
-  },
-
   /**
    * NUEVO: Obtener mensajes de la conversación del caso
    */
@@ -113,6 +101,32 @@ export const casoService = {
       return response.data;
     } catch (error) {
       console.error('Error obteniendo mensajes:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener documento con preview/full según estado de pago
+   */
+  async obtenerDocumento(casoId) {
+    try {
+      const response = await api.get(`/casos/${casoId}/documento`);
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo documento:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Simular pago y desbloquear documento
+   */
+  async simularPago(casoId) {
+    try {
+      const response = await api.post(`/casos/${casoId}/simular-pago`);
+      return response.data;
+    } catch (error) {
+      console.error('Error simulando pago:', error);
       throw error;
     }
   },
