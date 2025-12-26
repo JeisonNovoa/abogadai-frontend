@@ -6,6 +6,7 @@ import casoService from '../services/casoService';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Modal from '../components/Modal';
+import SolicitudReembolso from '../components/SolicitudReembolso';
 
 export default function MisCasos() {
   const navigate = useNavigate();
@@ -16,6 +17,10 @@ export default function MisCasos() {
   const [filtro, setFiltro] = useState('todos'); // todos, borrador, generado, finalizado
   const [busqueda, setBusqueda] = useState('');
   const [casoAEliminar, setCasoAEliminar] = useState(null);
+
+  // Estados para solicitud de reembolso
+  const [showModalReembolso, setShowModalReembolso] = useState(false);
+  const [casoParaReembolso, setCasoParaReembolso] = useState(null);
 
   useEffect(() => {
     cargarCasos();
@@ -47,6 +52,18 @@ export default function MisCasos() {
     }
   };
 
+  const handleSolicitarReembolso = (caso) => {
+    setCasoParaReembolso(caso);
+    setShowModalReembolso(true);
+  };
+
+  const handleReembolsoSuccess = () => {
+    toast.success('Solicitud de reembolso enviada exitosamente');
+    setShowModalReembolso(false);
+    setCasoParaReembolso(null);
+    cargarCasos(); // Recargar para actualizar el estado
+  };
+
   // Filtrar casos
   const casosFiltrados = casos.filter(caso => {
     // Filtro por estado
@@ -66,15 +83,22 @@ export default function MisCasos() {
   });
 
   const getEstadoBadge = (estado) => {
+    const estadoLower = estado?.toLowerCase();
     const badgeStyles = {
       borrador: { backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning-dark)' },
+      temporal: { backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning-dark)' },
       generado: { backgroundColor: 'var(--color-success-light)', color: 'var(--color-success-dark)' },
+      pagado: { backgroundColor: '#dcfce7', color: '#166534' }, // Verde oscuro
       finalizado: { backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' },
+      reembolsado: { backgroundColor: '#fee2e2', color: '#991b1b' }, // Rojo
     };
     const textos = {
       borrador: '📝 Borrador',
+      temporal: '⏳ Temporal',
       generado: '✅ Generado',
+      pagado: '💳 Pagado',
       finalizado: '🎯 Finalizado',
+      reembolsado: '💸 Reembolsado',
     };
 
     const defaultStyle = { backgroundColor: 'var(--neutral-300)', color: 'var(--neutral-700)' };
@@ -82,9 +106,9 @@ export default function MisCasos() {
     return (
       <span
         className="px-3 py-1 text-xs font-semibold rounded-full"
-        style={badgeStyles[estado] || defaultStyle}
+        style={badgeStyles[estadoLower] || defaultStyle}
       >
-        {textos[estado] || estado}
+        {textos[estadoLower] || estado}
       </span>
     );
   };
@@ -296,6 +320,38 @@ export default function MisCasos() {
                       <p>
                         <strong style={{ color: 'var(--neutral-700)' }}>Última actualización:</strong> {formatearFecha(caso.updated_at)}
                       </p>
+
+                      {/* Estado de documento y reembolso */}
+                      {caso.documento_desbloqueado && caso.estado?.toLowerCase() !== 'reembolsado' && (
+                        <p>
+                          <strong style={{ color: 'var(--neutral-700)' }}>Documento:</strong>{' '}
+                          <span style={{ color: 'var(--color-success)' }}>Desbloqueado (Pagado)</span>
+                        </p>
+                      )}
+
+                      {/* Reembolso pendiente de revisión - ahora fecha_reembolso no se resetea al re-solicitar */}
+                      {caso.reembolso_solicitado && caso.estado?.toLowerCase() !== 'reembolsado' && (
+                        <p style={{ color: 'var(--color-warning)' }}>
+                          <strong>⏳ Reembolso en revisión</strong>
+                          {caso.fecha_reembolso && (
+                            <span style={{ display: 'block', fontSize: '0.875rem', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                              (Re-solicitud)
+                            </span>
+                          )}
+                        </p>
+                      )}
+
+                      {/* Reembolso rechazado */}
+                      {!caso.reembolso_solicitado && caso.fecha_reembolso && caso.estado?.toLowerCase() !== 'reembolsado' && (
+                        <p style={{ color: 'var(--color-error)' }}>
+                          <strong>❌ Reembolso rechazado</strong>
+                          {caso.comentario_admin_reembolso && (
+                            <span style={{ display: 'block', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                              Razón: {caso.comentario_admin_reembolso}
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -314,6 +370,33 @@ export default function MisCasos() {
                     >
                       Ver
                     </Button>
+
+                    {/* Botón de reembolso (solo si está pagado y puede solicitar) */}
+                    {(() => {
+                      const estaPagado = caso.documento_desbloqueado || caso.estado?.toLowerCase() === 'pagado';
+                      const estaReembolsado = caso.estado?.toLowerCase() === 'reembolsado';
+                      const tieneSolicitudPendiente = caso.reembolso_solicitado && !caso.fecha_reembolso;
+                      const puedeVolverASolicitar = !caso.reembolso_solicitado && caso.fecha_reembolso && !estaReembolsado; // Fue rechazado
+                      const nuncaSolicito = !caso.reembolso_solicitado && !caso.fecha_reembolso;
+
+                      const puedeSolicitar = estaPagado && !estaReembolsado && (nuncaSolicito || puedeVolverASolicitar) && !tieneSolicitudPendiente;
+
+                      return puedeSolicitar ? (
+                        <Button
+                          variant="warning"
+                          size="sm"
+                          onClick={() => handleSolicitarReembolso(caso)}
+                          leftIcon={
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                          }
+                        >
+                          {puedeVolverASolicitar ? 'Solicitar de Nuevo' : 'Reembolso'}
+                        </Button>
+                      ) : null;
+                    })()}
+
                     <Button
                       variant="error"
                       size="sm"
@@ -371,6 +454,20 @@ export default function MisCasos() {
           Esta acción no se puede deshacer.
         </p>
       </Modal>
+
+      {/* Modal de solicitud de reembolso */}
+      {casoParaReembolso && (
+        <SolicitudReembolso
+          isOpen={showModalReembolso}
+          casoId={casoParaReembolso.id}
+          caso={casoParaReembolso}
+          onSuccess={handleReembolsoSuccess}
+          onCancel={() => {
+            setShowModalReembolso(false);
+            setCasoParaReembolso(null);
+          }}
+        />
+      )}
     </div>
   );
 }

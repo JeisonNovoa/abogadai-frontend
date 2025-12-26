@@ -20,6 +20,9 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
+    // Guardar la URL actual para redirigir después del login
+    const currentPath = window.location.pathname;
+    sessionStorage.setItem('redirectAfterLogin', currentPath);
     return <Navigate to="/login" replace />;
   }
 

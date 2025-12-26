@@ -8,6 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { useSessionState, SESSION_STATES } from '../hooks/useSessionState';
 import TranscriptPanel from '../components/TranscriptPanel';
 import RevisionRapida from '../components/RevisionRapida';
+import NivelUsuario from '../components/NivelUsuario';
+import UsoSesiones from '../components/UsoSesiones';
+// ModalConfirmarSesion eliminado - ahora inicia automáticamente
 
 // Componente para detectar participantes remotos (avatar)
 function AvatarDetector({ onAvatarConnected }) {
@@ -124,6 +127,8 @@ export default function AvatarSession() {
   const [conversacion, setConversacion] = useState([]);
   const videoContainerRef = useRef(null);
 
+  // Modal de confirmación eliminado - ahora inicia directamente
+
   // Estados para video de bienvenida
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
   const welcomeVideoRef = useRef(null);
@@ -230,8 +235,9 @@ export default function AvatarSession() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handler: Iniciar sesión (crear caso + conectar a LiveKit)
-  const handleIniciarSesion = async () => {
+  // Handler: Iniciar sesión directamente (crear caso + conectar a LiveKit)
+  const handleConfirmarIniciarSesion = async () => {
+
     try {
       console.log('🚀 Paso 1: Creando caso...');
       const casoData = await livekitService.iniciarSesion();
@@ -471,7 +477,7 @@ export default function AvatarSession() {
       <div className="flex-1 overflow-hidden">
         {/* ESTADO A: PRE-LLAMADA */}
         {sessionState.isPreLlamada && (
-          <div className="h-full flex items-center justify-center p-8">
+          <div className="h-full overflow-y-auto flex flex-col items-center justify-start p-8 py-12">
             <div className="max-w-xl text-center animate-fadeIn">
               <div
                 className="relative mx-auto mb-6 rounded-full flex items-center justify-center animate-pulse-soft"
@@ -551,7 +557,7 @@ export default function AvatarSession() {
               </p>
 
               <button
-                onClick={handleIniciarSesion}
+                onClick={handleConfirmarIniciarSesion}
                 className="font-bold py-3 px-8 rounded-lg text-base transition-all duration-300 transform hover:scale-105"
                 style={{
                   background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
@@ -569,6 +575,12 @@ export default function AvatarSession() {
               >
                 Iniciar Sesión
               </button>
+
+              {/* Componentes de nivel y uso de sesiones */}
+              <div style={{ marginTop: '3rem', maxWidth: '600px', width: '100%' }}>
+                <NivelUsuario />
+                <UsoSesiones />
+              </div>
             </div>
           </div>
         )}
@@ -786,6 +798,8 @@ export default function AvatarSession() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmación eliminado - ahora inicia automáticamente */}
     </div>
   );
 }

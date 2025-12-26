@@ -34,7 +34,16 @@ export default function Login() {
       sessionStorage.setItem('justLoggedIn', 'true');
       console.log('✅ Login exitoso - Flag de video establecida');
 
-      navigate('/app');
+      // Verificar si hay una URL guardada para redirigir (ej: /app/admin/reembolsos)
+      const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        console.log('🔄 Redirigiendo a URL guardada:', redirectUrl);
+        sessionStorage.removeItem('redirectAfterLogin'); // Limpiar
+        navigate(redirectUrl);
+      } else {
+        console.log('🏠 Redirigiendo a /app (default)');
+        navigate('/app');
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Error al iniciar sesión');
     } finally {

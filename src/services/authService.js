@@ -16,15 +16,25 @@ export const authService = {
 
   async getCurrentUser() {
     const response = await api.get('/auth/me');
-    return response.data;
+    const userData = response.data;
+    // Guardar usuario completo en localStorage para acceso rápido
+    localStorage.setItem('user', JSON.stringify(userData));
+    return userData;
   },
 
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('user'); // Limpiar también el usuario
     window.location.href = '/login';
   },
 
   isAuthenticated() {
     return !!localStorage.getItem('token');
+  },
+
+  // Obtener usuario desde localStorage (sin hacer request)
+  getCachedUser() {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
   },
 };
