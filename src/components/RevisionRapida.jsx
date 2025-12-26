@@ -240,9 +240,26 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Datos del Solicitante (Solo Lectura) */}
-          <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--neutral-100)', border: '1px solid var(--neutral-300)' }}>
+          <div
+            className="rounded-lg p-4"
+            style={{
+              backgroundColor: validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante')
+                ? 'rgba(239, 68, 68, 0.1)'
+                : 'var(--neutral-100)',
+              border: validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante')
+                ? '2px solid var(--color-error)'
+                : '1px solid var(--neutral-300)'
+            }}
+          >
             <div className="flex justify-between items-center mb-3">
-              <h4 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Datos del Solicitante</h4>
+              <div>
+                <h4 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Datos del Solicitante</h4>
+                {validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante') && (
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                    ⚠️ Completa estos datos en tu perfil
+                  </p>
+                )}
+              </div>
               <button
                 onClick={() => navigate('/app/perfil')}
                 className="text-xs text-white px-3 py-1 rounded transition"
@@ -255,14 +272,38 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Nombre</label>
-                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
+                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-600)' }}>
+                  Nombre
+                  {validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') && (
+                    <span style={{ color: 'var(--color-error)' }} className="text-xs">* Obligatorio</span>
+                  )}
+                </label>
+                <div
+                  className="px-3 py-2 rounded mt-1"
+                  style={{
+                    color: validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') ? 'var(--color-error)' : 'var(--neutral-800)',
+                    backgroundColor: 'var(--neutral-200)',
+                    border: validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') ? '1px solid var(--color-error)' : 'none'
+                  }}
+                >
                   {caso.nombre_solicitante || '-'}
                 </div>
               </div>
               <div>
-                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Identificación</label>
-                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
+                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-600)' }}>
+                  Identificación
+                  {validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') && (
+                    <span style={{ color: 'var(--color-error)' }} className="text-xs">* Formato inválido</span>
+                  )}
+                </label>
+                <div
+                  className="px-3 py-2 rounded mt-1"
+                  style={{
+                    color: validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') ? 'var(--color-error)' : 'var(--neutral-800)',
+                    backgroundColor: 'var(--neutral-200)',
+                    border: validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') ? '1px solid var(--color-error)' : 'none'
+                  }}
+                >
                   {caso.identificacion_solicitante || '-'}
                 </div>
               </div>
@@ -462,9 +503,22 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
         <div className="px-4 py-3 border-t flex justify-between items-center" style={{ backgroundColor: 'var(--neutral-200)', borderColor: 'var(--neutral-300)' }}>
           <div className="text-sm">
             {validacion?.bloqueantes_faltantes.length > 0 ? (
-              <span style={{ color: 'var(--color-warning-dark)' }}>
-                Completa {validacion.bloqueantes_faltantes.length} campo(s) obligatorio(s)
-              </span>
+              <div style={{ color: 'var(--color-warning-dark)' }}>
+                <div className="font-semibold mb-1">Faltan {validacion.bloqueantes_faltantes.length} campo(s) obligatorio(s):</div>
+                <div className="text-xs">
+                  {validacion.bloqueantes_faltantes.map((campo, idx) => (
+                    <span key={campo}>
+                      {campo === 'nombre_solicitante' && 'Nombre del solicitante (ir a Perfil)'}
+                      {campo === 'identificacion_solicitante' && 'Identificación válida (ir a Perfil)'}
+                      {campo === 'entidad_accionada' && 'Entidad destinataria'}
+                      {campo === 'hechos' && 'Hechos'}
+                      {campo === 'derechos_vulnerados' && 'Derechos vulnerados'}
+                      {campo === 'pretensiones' && 'Peticiones'}
+                      {idx < validacion.bloqueantes_faltantes.length - 1 && ', '}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ) : (
               <span style={{ color: 'var(--color-success-dark)' }}>
                 Todos los campos obligatorios completados

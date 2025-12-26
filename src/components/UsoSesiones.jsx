@@ -22,10 +22,10 @@ export default function UsoSesiones({ variant = 'full' }) {
   useEffect(() => {
     cargarDatosUso();
 
-    // Actualizar cada 30 segundos
+    // Actualizar cada 5 segundos
     const interval = setInterval(() => {
       cargarDatosUso();
-    }, 30000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);

@@ -18,6 +18,13 @@ export default function NivelUsuario({ variant = 'full' }) {
 
   useEffect(() => {
     cargarDatosNivel();
+
+    // Actualizar cada 10 segundos
+    const interval = setInterval(() => {
+      cargarDatosNivel();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const cargarDatosNivel = async () => {
