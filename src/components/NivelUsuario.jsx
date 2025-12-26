@@ -8,8 +8,10 @@ import api from '../services/api';
  * Niveles: FREE, BRONCE, PLATA, ORO
  *
  * @component
+ * @param {Object} props
+ * @param {string} props.variant - "full" (default) o "sidebar" para versión compacta
  */
-export default function NivelUsuario() {
+export default function NivelUsuario({ variant = 'full' }) {
   const [datosNivel, setDatosNivel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -223,6 +225,93 @@ export default function NivelUsuario() {
     marginTop: 'var(--spacing-md)',
   };
 
+  // VARIANTE SIDEBAR (compacto)
+  if (variant === 'sidebar') {
+    const config = configuracionNiveles[datosNivel?.nivel_actual] || configuracionNiveles.FREE;
+    const progreso = datosNivel?.pagos_hasta_siguiente > 0
+      ? (datosNivel.pagos_en_nivel / datosNivel.pagos_hasta_siguiente) * 100
+      : 100;
+
+    return (
+      <div
+        style={{
+          padding: '0.5rem',
+          marginBottom: '0.5rem',
+          borderRadius: 'var(--radius-lg)',
+          backgroundColor: 'var(--neutral-100)',
+        }}
+      >
+        {/* Header compacto */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--neutral-700)' }}>
+            Tu Nivel
+          </span>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.125rem 0.375rem',
+              background: config.gradiente,
+              borderRadius: 'var(--radius-full)',
+              color: datosNivel?.nivel_actual === 'FREE' ? 'white' : '#1b1b1b',
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 'var(--font-weight-bold)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <span style={{ fontSize: '0.875rem' }}>{config.icono}</span>
+            <span>{config.nombre}</span>
+          </div>
+        </div>
+
+        {/* Barra de progreso */}
+        {datosNivel?.siguiente_nivel && (
+          <div style={{ marginTop: '0.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.125rem' }}>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--neutral-600)' }}>
+                {datosNivel.pagos_en_nivel}/{datosNivel.pagos_hasta_siguiente}
+              </span>
+              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: config.color }}>
+                {Math.round(progreso)}%
+              </span>
+            </div>
+            <div style={{
+              width: '100%',
+              height: '4px',
+              backgroundColor: 'white',
+              borderRadius: 'var(--radius-full)',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%',
+                background: config.gradiente,
+                width: `${Math.min(progreso, 100)}%`,
+                borderRadius: 'var(--radius-full)',
+                transition: 'width 0.5s ease-out',
+              }} />
+            </div>
+          </div>
+        )}
+
+        {/* Stats compactos - Solo sesiones */}
+        <div style={{
+          marginTop: '0.375rem',
+          fontSize: 'var(--font-size-xs)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.125rem' }}>
+            <span>📱</span>
+            <span style={{ color: 'var(--neutral-700)' }}>{datosNivel?.sesiones_maximas} sesiones base/día</span>
+          </div>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--neutral-500)', paddingLeft: '1.25rem' }}>
+            + 2 extras por cada pago
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // VARIANTE FULL (original)
   return (
     <div style={containerStyles}>
       {/* Header con badge de nivel */}

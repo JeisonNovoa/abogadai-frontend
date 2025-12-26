@@ -11,8 +11,10 @@ import api from '../services/api';
  * - Advertencias cuando se acerca al límite
  *
  * @component
+ * @param {Object} props
+ * @param {string} props.variant - "full" (default) o "sidebar" para versión compacta
  */
-export default function UsoSesiones() {
+export default function UsoSesiones({ variant = 'full' }) {
   const [datosUso, setDatosUso] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -234,6 +236,78 @@ export default function UsoSesiones() {
     gap: 'var(--spacing-sm)',
   };
 
+  // VARIANTE SIDEBAR (compacto)
+  if (variant === 'sidebar') {
+    const porcentajeSesiones = calcularPorcentaje(datosUso?.sesiones_usadas || 0, datosUso?.sesiones_disponibles || 1);
+    const colorBarra = obtenerColorBarra(porcentajeSesiones);
+    const colorFondo = obtenerColorFondo(porcentajeSesiones);
+    const mostrarAdvertencia = porcentajeSesiones >= 75;
+
+    return (
+      <div
+        style={{
+          padding: '0.5rem',
+          borderRadius: 'var(--radius-lg)',
+          backgroundColor: colorFondo,
+          border: mostrarAdvertencia ? `2px solid ${colorBarra}` : 'none',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.125rem' }}>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--neutral-700)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span>📱</span>
+            <span>Sesiones Hoy</span>
+          </span>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-bold)', color: colorBarra }}>
+            {datosUso?.sesiones_usadas || 0}/{datosUso?.sesiones_disponibles || 0}
+          </span>
+        </div>
+
+        {/* Nota explicativa */}
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--neutral-500)', marginBottom: '0.25rem' }}>
+          Base + extras del día
+        </div>
+
+        {/* Barra de progreso */}
+        <div style={{
+          width: '100%',
+          height: '4px',
+          backgroundColor: 'white',
+          borderRadius: 'var(--radius-full)',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.06)',
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${porcentajeSesiones}%`,
+            backgroundColor: colorBarra,
+            borderRadius: 'var(--radius-full)',
+            transition: 'width 0.5s ease-out',
+          }} />
+        </div>
+
+        {/* Advertencia si está cerca del límite */}
+        {mostrarAdvertencia && (
+          <div style={{
+            marginTop: '0.25rem',
+            fontSize: '0.625rem',
+            color: colorBarra,
+            fontWeight: 'var(--font-weight-semibold)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.125rem',
+          }}>
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>{porcentajeSesiones >= 100 ? 'Límite' : 'Cerca límite'}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // VARIANTE FULL (original)
   return (
     <div style={containerStyles}>
       {/* Header */}

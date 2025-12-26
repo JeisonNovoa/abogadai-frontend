@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NivelUsuario from './NivelUsuario';
+import UsoSesiones from './UsoSesiones';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -131,7 +133,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-3 py-4 space-y-2">
+      <nav className="px-3 py-4 space-y-2">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -162,6 +164,28 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Mi Uso Section - Solo visible cuando está expandido */}
+      {isExpanded ? (
+        <div className="flex-1 px-3 pb-2" style={{ borderTop: '1px solid var(--neutral-200)', paddingTop: '0.75rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <h3 style={{
+            fontSize: 'var(--font-size-xs)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'var(--neutral-500)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: '0.5rem',
+            paddingLeft: 'var(--spacing-xs)',
+          }}>
+            Mi Uso
+          </h3>
+          <NivelUsuario variant="sidebar" />
+          <UsoSesiones variant="sidebar" />
+        </div>
+      ) : (
+        // Spacer para empujar User Section hacia abajo cuando está colapsado
+        <div className="flex-1"></div>
+      )}
 
       {/* User Section */}
       <div className="border-t p-4" style={{ borderColor: 'var(--neutral-300)' }}>

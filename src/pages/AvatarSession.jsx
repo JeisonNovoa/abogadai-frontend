@@ -8,8 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { useSessionState, SESSION_STATES } from '../hooks/useSessionState';
 import TranscriptPanel from '../components/TranscriptPanel';
 import RevisionRapida from '../components/RevisionRapida';
-import NivelUsuario from '../components/NivelUsuario';
-import UsoSesiones from '../components/UsoSesiones';
 // ModalConfirmarSesion eliminado - ahora inicia automáticamente
 
 // Componente para detectar participantes remotos (avatar)
@@ -575,12 +573,6 @@ export default function AvatarSession() {
               >
                 Iniciar Sesión
               </button>
-
-              {/* Componentes de nivel y uso de sesiones */}
-              <div style={{ marginTop: '3rem', maxWidth: '600px', width: '100%' }}>
-                <NivelUsuario />
-                <UsoSesiones />
-              </div>
             </div>
           </div>
         )}
