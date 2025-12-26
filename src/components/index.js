@@ -22,10 +22,8 @@ export { default as AnalisisDocumento } from './AnalisisDocumento';
 export { default as DocumentoViewer } from './DocumentoViewer';
 export { default as RevisionRapida } from './RevisionRapida';
 export { default as TranscriptPanel } from './TranscriptPanel';
-export { default as PerfilIncompletoModal } from './PerfilIncompletoModal';
 
 // Componentes del Sistema de Niveles (Fase 5)
 export { default as NivelUsuario } from './NivelUsuario';
 export { default as UsoSesiones } from './UsoSesiones';
-export { default as ModalConfirmarSesion } from './ModalConfirmarSesion';
 export { default as SolicitudReembolso } from './SolicitudReembolso';
