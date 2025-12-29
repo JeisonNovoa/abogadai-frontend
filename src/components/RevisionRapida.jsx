@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import casoService from '../services/casoService';
+import perfilService from '../services/perfilService';
 import api from '../services/api';
 import Button from './Button';
 import Modal from './Modal';
@@ -31,6 +32,13 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
   useEffect(() => {
     if (caso) {
       setFormData({
+        // Datos del perfil (editables)
+        nombre_solicitante: caso.nombre_solicitante || '',
+        identificacion_solicitante: caso.identificacion_solicitante || '',
+        direccion_solicitante: caso.direccion_solicitante || '',
+        telefono_solicitante: caso.telefono_solicitante || '',
+        email_solicitante: caso.email_solicitante || '',
+        // Datos del caso
         tipo_documento: caso.tipo_documento || 'tutela',
         actua_en_representacion: caso.actua_en_representacion || false,
         nombre_representado: caso.nombre_representado || '',
@@ -98,8 +106,24 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
 
     try {
       setGuardando(true);
+
+      // Actualizar el caso
       const casoActualizado = await casoService.actualizarCaso(caso.id, formData);
       onCasoUpdated?.(casoActualizado);
+
+      // Actualizar el perfil con los datos del solicitante
+      // Solo se envían los campos que están en el formulario
+      const perfilUpdate = {};
+      if (formData.nombre_solicitante) perfilUpdate.nombre = formData.nombre_solicitante;
+      if (formData.identificacion_solicitante) perfilUpdate.identificacion = formData.identificacion_solicitante;
+      if (formData.direccion_solicitante) perfilUpdate.direccion = formData.direccion_solicitante;
+      if (formData.telefono_solicitante) perfilUpdate.telefono = formData.telefono_solicitante;
+
+      // Solo actualizar si hay campos para actualizar
+      if (Object.keys(perfilUpdate).length > 0) {
+        await perfilService.actualizarPerfil(perfilUpdate);
+      }
+
       await cargarValidacion(); // Recargar validación después de guardar
     } catch (error) {
       console.error('Error guardando cambios:', error);
@@ -239,91 +263,123 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Datos del Solicitante (Solo Lectura) */}
+          {/* Datos del Solicitante (Editables) */}
           <div
             className="rounded-lg p-4"
             style={{
               backgroundColor: validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante')
                 ? 'rgba(239, 68, 68, 0.1)'
-                : 'var(--neutral-100)',
+                : 'rgba(11, 109, 255, 0.05)',
               border: validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante')
                 ? '2px solid var(--color-error)'
-                : '1px solid var(--neutral-300)'
+                : '2px solid var(--color-primary)'
             }}
           >
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <h4 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Datos del Solicitante</h4>
-                {validacion?.bloqueantes_faltantes?.some(c => c === 'nombre_solicitante' || c === 'identificacion_solicitante') && (
-                  <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
-                    ⚠️ Completa estos datos en tu perfil
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => navigate('/app/perfil')}
-                className="text-xs text-white px-3 py-1 rounded transition"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
-              >
-                Ir a Perfil para editar
-              </button>
+            <div className="mb-3">
+              <h4 className="font-semibold text-sm" style={{ color: 'var(--neutral-800)' }}>Datos del Solicitante</h4>
+              <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--color-primary-dark)' }}>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Los cambios se guardarán en tu perfil automáticamente (excepto email)
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-600)' }}>
-                  Nombre
+                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
+                  Nombre Completo *
                   {validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') && (
-                    <span style={{ color: 'var(--color-error)' }} className="text-xs">* Obligatorio</span>
+                    <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                   )}
                 </label>
-                <div
-                  className="px-3 py-2 rounded mt-1"
+                <input
+                  type="text"
+                  name="nombre_solicitante"
+                  value={formData.nombre_solicitante}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{
-                    color: validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') ? 'var(--color-error)' : 'var(--neutral-800)',
-                    backgroundColor: 'var(--neutral-200)',
-                    border: validacion?.bloqueantes_faltantes?.includes('nombre_solicitante') ? '1px solid var(--color-error)' : 'none'
+                    backgroundColor: 'white',
+                    color: 'var(--neutral-800)',
+                    border: validacion?.bloqueantes_faltantes?.includes('nombre_solicitante')
+                      ? '1px solid var(--color-error)'
+                      : '1px solid var(--neutral-300)'
                   }}
-                >
-                  {caso.nombre_solicitante || '-'}
-                </div>
+                  placeholder="Ej: Juan Pérez García"
+                />
               </div>
               <div>
-                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-600)' }}>
-                  Identificación
+                <label className="text-xs flex items-center gap-2" style={{ color: 'var(--neutral-700)' }}>
+                  Identificación *
                   {validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') && (
-                    <span style={{ color: 'var(--color-error)' }} className="text-xs">* Formato inválido</span>
+                    <span style={{ color: 'var(--color-error)' }} className="text-xs">Obligatorio</span>
                   )}
                 </label>
-                <div
-                  className="px-3 py-2 rounded mt-1"
+                <input
+                  type="text"
+                  name="identificacion_solicitante"
+                  value={formData.identificacion_solicitante}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
                   style={{
-                    color: validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') ? 'var(--color-error)' : 'var(--neutral-800)',
-                    backgroundColor: 'var(--neutral-200)',
-                    border: validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante') ? '1px solid var(--color-error)' : 'none'
+                    backgroundColor: 'white',
+                    color: 'var(--neutral-800)',
+                    border: validacion?.bloqueantes_faltantes?.includes('identificacion_solicitante')
+                      ? '1px solid var(--color-error)'
+                      : '1px solid var(--neutral-300)'
                   }}
-                >
-                  {caso.identificacion_solicitante || '-'}
-                </div>
+                  placeholder="Ej: 1234567890"
+                />
               </div>
               <div className="col-span-2">
-                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Dirección</label>
-                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
-                  {caso.direccion_solicitante || '-'}
-                </div>
+                <label className="text-xs" style={{ color: 'var(--neutral-700)' }}>Dirección</label>
+                <input
+                  type="text"
+                  name="direccion_solicitante"
+                  value={formData.direccion_solicitante}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    backgroundColor: 'white',
+                    color: 'var(--neutral-800)',
+                    border: '1px solid var(--neutral-300)'
+                  }}
+                  placeholder="Ej: Calle 123 #45-67, Bogotá"
+                />
               </div>
               <div>
-                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Teléfono</label>
-                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
-                  {caso.telefono_solicitante || '-'}
-                </div>
+                <label className="text-xs" style={{ color: 'var(--neutral-700)' }}>Teléfono</label>
+                <input
+                  type="text"
+                  name="telefono_solicitante"
+                  value={formData.telefono_solicitante}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    backgroundColor: 'white',
+                    color: 'var(--neutral-800)',
+                    border: '1px solid var(--neutral-300)'
+                  }}
+                  placeholder="Ej: 3001234567"
+                />
               </div>
               <div>
-                <label className="text-xs" style={{ color: 'var(--neutral-600)' }}>Email</label>
-                <div className="px-3 py-2 rounded mt-1" style={{ color: 'var(--neutral-800)', backgroundColor: 'var(--neutral-200)' }}>
-                  {caso.email_solicitante || '-'}
-                </div>
+                <label className="text-xs" style={{ color: 'var(--neutral-700)' }}>
+                  Email (solo para documento)
+                </label>
+                <input
+                  type="email"
+                  name="email_solicitante"
+                  value={formData.email_solicitante}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                  style={{
+                    backgroundColor: 'white',
+                    color: 'var(--neutral-800)',
+                    border: '1px solid var(--neutral-300)'
+                  }}
+                  placeholder="Ej: correo@ejemplo.com"
+                />
               </div>
             </div>
           </div>
@@ -508,8 +564,8 @@ export default function RevisionRapida({ caso, conversacion = [], onCasoUpdated,
                 <div className="text-xs">
                   {validacion.bloqueantes_faltantes.map((campo, idx) => (
                     <span key={campo}>
-                      {campo === 'nombre_solicitante' && 'Nombre del solicitante (ir a Perfil)'}
-                      {campo === 'identificacion_solicitante' && 'Identificación válida (ir a Perfil)'}
+                      {campo === 'nombre_solicitante' && 'Nombre del solicitante'}
+                      {campo === 'identificacion_solicitante' && 'Identificación válida'}
                       {campo === 'entidad_accionada' && 'Entidad destinataria'}
                       {campo === 'hechos' && 'Hechos'}
                       {campo === 'derechos_vulnerados' && 'Derechos vulnerados'}
