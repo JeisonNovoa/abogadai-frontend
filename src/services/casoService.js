@@ -53,7 +53,69 @@ export const casoService = {
   async procesarTranscripcion(casoId) {
     try {
       const response = await api.post(`/casos/${casoId}/procesar-transcripcion`);
-      return response.data;
+      const caso = response.data;
+
+      // 📊 IMPRIMIR TODOS LOS CAMPOS DEL CASO EN CONSOLA
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📊 CAMPOS EXTRAÍDOS Y AUTO-LLENADOS POR LA IA');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('');
+
+      console.log('🎯 TIPO DE DOCUMENTO:');
+      console.log(`   tipo_documento: "${caso.tipo_documento || ''}"`);
+      console.log('');
+
+      console.log('👤 DATOS DEL SOLICITANTE (desde perfil):');
+      console.log(`   nombre_solicitante: "${caso.nombre_solicitante || ''}"`);
+      console.log(`   identificacion_solicitante: "${caso.identificacion_solicitante || ''}"`);
+      console.log(`   direccion_solicitante: "${caso.direccion_solicitante || ''}"`);
+      console.log(`   telefono_solicitante: "${caso.telefono_solicitante || ''}"`);
+      console.log(`   email_solicitante: "${caso.email_solicitante || ''}"`);
+      console.log('');
+
+      console.log('🤝 REPRESENTACIÓN:');
+      console.log(`   actua_en_representacion: ${caso.actua_en_representacion || false}`);
+      console.log(`   nombre_representado: "${caso.nombre_representado || ''}"`);
+      console.log(`   identificacion_representado: "${caso.identificacion_representado || ''}"`);
+      console.log(`   relacion_representado: "${caso.relacion_representado || ''}"`);
+      console.log(`   tipo_representado: "${caso.tipo_representado || ''}"`);
+      console.log('');
+
+      console.log('🏢 ENTIDAD ACCIONADA:');
+      console.log(`   entidad_accionada: "${caso.entidad_accionada || ''}"`);
+      console.log(`   direccion_entidad: "${caso.direccion_entidad || ''}"`);
+      console.log('');
+
+      console.log('📝 HECHOS Y CONTEXTO:');
+      console.log(`   hechos: "${caso.hechos ? (caso.hechos.substring(0, 100) + '...') : ''}"`);
+      console.log(`   ciudad_de_los_hechos: "${caso.ciudad_de_los_hechos || ''}"`);
+      console.log('');
+
+      console.log('⚖️ DERECHOS Y FUNDAMENTOS:');
+      console.log(`   derechos_vulnerados: "${caso.derechos_vulnerados ? (caso.derechos_vulnerados.substring(0, 100) + '...') : ''}"`);
+      console.log(`   fundamentos_derecho: "${caso.fundamentos_derecho ? (caso.fundamentos_derecho.substring(0, 100) + '...') : ''}"`);
+      console.log('');
+
+      console.log('🎯 PRETENSIONES:');
+      console.log(`   pretensiones: "${caso.pretensiones ? (caso.pretensiones.substring(0, 100) + '...') : ''}"`);
+      console.log('');
+
+      console.log('📄 PRUEBAS:');
+      console.log(`   pruebas: "${caso.pruebas ? (caso.pruebas.substring(0, 100) + '...') : ''}"`);
+      console.log('');
+
+      console.log('⚖️ SUBSIDIARIEDAD:');
+      console.log(`   hubo_derecho_peticion_previo: ${caso.hubo_derecho_peticion_previo || false}`);
+      console.log(`   detalle_derecho_peticion_previo: "${caso.detalle_derecho_peticion_previo || ''}"`);
+      console.log(`   tiene_perjuicio_irremediable: ${caso.tiene_perjuicio_irremediable || false}`);
+      console.log(`   es_procedente_tutela: ${caso.es_procedente_tutela !== null ? caso.es_procedente_tutela : 'null'}`);
+      console.log(`   razon_improcedencia: "${caso.razon_improcedencia || ''}"`);
+      console.log('');
+
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('');
+
+      return caso;
     } catch (error) {
       console.error('Error procesando transcripción:', error);
       throw error;
