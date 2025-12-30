@@ -4,6 +4,65 @@ import Button from './Button';
 import { useToast } from '../context/ToastContext';
 
 /**
+ * Procesa el texto markdown del documento y lo convierte a HTML con estilos
+ */
+const procesarDocumento = (texto) => {
+  if (!texto) return '';
+
+  const lineas = texto.split('\n');
+  let html = '';
+
+  lineas.forEach((linea) => {
+    const lineaTrim = linea.trim();
+
+    // Línea vacía
+    if (!lineaTrim) {
+      html += '<div style="height: 0.25rem;"></div>';
+      return;
+    }
+
+    // Título principal (ACCIÓN DE TUTELA, DERECHO DE PETICIÓN)
+    if (/^\*\*(ACCIÓN DE TUTELA|DERECHO DE PETICIÓN)\*\*$/i.test(lineaTrim)) {
+      const texto = lineaTrim.replace(/\*\*/g, '');
+      html += `<h1 style="text-align: center; font-size: 14pt; font-weight: bold; margin: 0.5rem 0 1rem 0; font-family: 'Times New Roman', serif;">${texto}</h1>`;
+      return;
+    }
+
+    // Títulos de sección (I., II., III., etc.)
+    if (/^\*\*([IVX]+\.)\s*.+\*\*$/i.test(lineaTrim)) {
+      const texto = lineaTrim.replace(/\*\*/g, '');
+      html += `<h2 style="font-size: 12pt; font-weight: bold; margin: 1rem 0 0.5rem 0; font-family: 'Times New Roman', serif;">${texto}</h2>`;
+      return;
+    }
+
+    // Otras líneas con negrita completa
+    if (/^\*\*.+\*\*$/.test(lineaTrim)) {
+      const texto = lineaTrim.replace(/\*\*/g, '');
+      // Si es mayúsculas o corto, es un subtítulo
+      if (lineaTrim === lineaTrim.toUpperCase() || texto.length < 80) {
+        html += `<p style="font-weight: bold; margin: 0.5rem 0; font-family: 'Times New Roman', serif; font-size: 11pt;">${texto}</p>`;
+      } else {
+        // Texto en negrita pero párrafo normal
+        html += `<p style="text-align: justify; margin: 0.4rem 0; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.6;"><strong>${texto}</strong></p>`;
+      }
+      return;
+    }
+
+    // Líneas de firma (guiones bajos)
+    if (/^_{3,}$/.test(lineaTrim)) {
+      html += `<p style="margin: 0.5rem 0; font-family: 'Times New Roman', serif; font-size: 11pt;">${lineaTrim}</p>`;
+      return;
+    }
+
+    // Texto normal - procesar negrilla interna **texto**
+    const textoConNegrilla = linea.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html += `<p style="text-align: justify; margin: 0.4rem 0; font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.6;">${textoConNegrilla}</p>`;
+  });
+
+  return html;
+};
+
+/**
  * 🔒 DocumentoViewer - Componente para mostrar documentos con sistema de preview/pago
  *
  * Funcionalidad:
@@ -174,26 +233,20 @@ export default function DocumentoViewer({ casoId, onPagoExitoso }) {
         {documento.preview ? (
           <div className="relative">
             {/* Contenido visible (15%) */}
-            <div className="p-8" style={{
-              fontFamily: 'Times New Roman, serif',
-              fontSize: '11pt',
-              lineHeight: '1.6',
-            }}>
-              <pre className="whitespace-pre-wrap font-serif">
-                {documento.contenido}
-              </pre>
-            </div>
+            <div
+              className="p-8"
+              dangerouslySetInnerHTML={{ __html: procesarDocumento(documento.contenido) }}
+            />
 
             {/* Overlay con blur y call-to-action */}
             <div className="relative mt-8">
               {/* Contenido borroso de fondo */}
-              <div className="blur-md select-none pointer-events-none opacity-40 p-8">
-                <pre className="whitespace-pre-wrap font-serif">
-                  {documento.contenido}
-                  {'\n\n'}
-                  {documento.contenido}
-                </pre>
-              </div>
+              <div
+                className="blur-md select-none pointer-events-none opacity-40 p-8"
+                dangerouslySetInnerHTML={{
+                  __html: procesarDocumento(documento.contenido + '\n\n' + documento.contenido)
+                }}
+              />
 
               {/* Overlay central con llamado a la acción */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -262,15 +315,10 @@ export default function DocumentoViewer({ casoId, onPagoExitoso }) {
           </div>
         ) : (
           // Documento completo (ya desbloqueado)
-          <div className="p-8" style={{
-            fontFamily: 'Times New Roman, serif',
-            fontSize: '11pt',
-            lineHeight: '1.6',
-          }}>
-            <pre className="whitespace-pre-wrap font-serif">
-              {documento.contenido}
-            </pre>
-          </div>
+          <div
+            className="p-8"
+            dangerouslySetInnerHTML={{ __html: procesarDocumento(documento.contenido) }}
+          />
         )}
       </div>
 
