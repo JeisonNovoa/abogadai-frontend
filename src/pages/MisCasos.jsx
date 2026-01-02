@@ -26,7 +26,6 @@ export default function MisCasos() {
     cargarCasos();
   }, []);
 
-  // ✅ Marcar casos como vistos al entrar a la página
   useEffect(() => {
     const marcarVistos = async () => {
       try {
@@ -127,7 +126,10 @@ export default function MisCasos() {
   };
 
   const getTipoDocumentoBadge = (tipo) => {
-    if (tipo === 'tutela') {
+    // Normalizar a mayúsculas para comparación (backend envía "TUTELA" o "DERECHO_PETICION")
+    const tipoNormalizado = tipo?.toUpperCase();
+
+    if (tipoNormalizado === 'TUTELA') {
       return (
         <span
           className="px-3 py-1 text-xs font-semibold rounded-full"
@@ -136,13 +138,23 @@ export default function MisCasos() {
           ⚖️ Tutela
         </span>
       );
-    } else {
+    } else if (tipoNormalizado === 'DERECHO_PETICION') {
       return (
         <span
           className="px-3 py-1 text-xs font-semibold rounded-full"
           style={{ backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' }}
         >
           📝 Derecho de Petición
+        </span>
+      );
+    } else {
+      // Fallback si llega un valor inesperado
+      return (
+        <span
+          className="px-3 py-1 text-xs font-semibold rounded-full"
+          style={{ backgroundColor: 'var(--neutral-300)', color: 'var(--neutral-700)' }}
+        >
+          {tipo || 'Desconocido'}
         </span>
       );
     }
